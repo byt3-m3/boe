@@ -61,13 +61,6 @@ class BankAccount(CoreAggregate):
         else:
             return False
 
-    def verify_admin(self, expected_admin: AccountAdmin) -> bool:
-        # TODO: Remove Once Vents are convereted
-        if expected_admin.id in self.admin_map:
-            return True
-        else:
-            return False
-
     @event("ChangeBalance")
     def change_balance(self, method: TransactionMethodEnum, value: float, role: RoleAggregate):
         if self._verify_role_permissions(

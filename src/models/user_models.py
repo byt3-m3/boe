@@ -6,7 +6,7 @@ from src.enums import PermissionsEnum, GenderEnum
 @dataclass
 class RoleDataModel:
     name: str
-    permissions: List[PermissionsEnum]
+
 
 
 @dataclass

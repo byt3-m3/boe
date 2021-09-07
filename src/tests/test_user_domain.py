@@ -24,23 +24,11 @@ def user_data_model():
     )
 
 
-@fixture
-def role_data_model():
-    yield RoleDataModel(
-        name="test_role",
-        permissions=[PermissionsEnum.ADMIN]
-    )
+
 
 
 @fixture
-def role_aggregate_testable(role_data_model):
-    yield RoleAggregate(
-        model=role_data_model
-    )
-
-
-@fixture
-def child_aggregate_testable(role_aggregate_testable):
+def child_aggregate_testable(role_aggregate):
     yield ChildAggregate(
         model=ChildDataModel(
             first_name="test_name",
@@ -52,13 +40,13 @@ def child_aggregate_testable(role_aggregate_testable):
 
         ),
         role_mapping={
-            role_aggregate_testable.id: role_aggregate_testable
+            role_aggregate.id: role_aggregate
         }
     )
 
 
 @fixture
-def adult_aggregate_testable(role_aggregate_testable):
+def adult_aggregate_testable(role_aggregate):
     yield AdultAggregate(
         model=AdultDataModel(
             first_name="test_name",
@@ -67,7 +55,7 @@ def adult_aggregate_testable(role_aggregate_testable):
 
         ),
         role_mapping={
-            role_aggregate_testable.id: role_aggregate_testable
+            role_aggregate.id: role_aggregate
         }
     )
 
@@ -81,11 +69,11 @@ def family_aggregate_testable(child_aggregate_testable, adult_aggregate_testable
 
 
 @fixture
-def user_account_aggregate_testable(role_aggregate_testable, user_data_model):
+def user_account_aggregate_testable(role_aggregate, user_data_model):
     return UserAccountAggregate(
         model=user_data_model,
         role_mapping={
-            role_aggregate_testable.id: role_aggregate_testable
+            role_aggregate.id: role_aggregate
         }
     )
 
@@ -123,7 +111,7 @@ def test_family_aggregate_remove_parent(family_aggregate_testable, adult_aggrega
 def test_user_account_aggregate_add_role(user_account_aggregate_testable, role_data_model):
     testable = user_account_aggregate_testable
 
-    new_role = RoleAggregate(model=role_data_model)
+    new_role = RoleAggregate(model=role_data_model, permissions=[PermissionsEnum.ADMIN])
     testable.add_role(new_role)
 
     actual = testable.role_mapping.get(new_role.id)
@@ -134,7 +122,7 @@ def test_user_account_aggregate_add_role(user_account_aggregate_testable, role_d
 def test_user_account_aggregate_remove_role(user_account_aggregate_testable, role_data_model):
     testable = user_account_aggregate_testable
 
-    new_role = RoleAggregate(model=role_data_model)
+    new_role = RoleAggregate(model=role_data_model, permissions=[PermissionsEnum.ADMIN])
     testable.add_role(new_role)
     testable.remove_role(role=new_role)
 
@@ -162,28 +150,27 @@ def test_user_account_aggregate_update_last_name(user_account_aggregate_testable
     assert subject.model.last_name == "New Name"
 
 
-def test_role_aggregate_append_permission(role_aggregate_testable):
-    testable = role_aggregate_testable
+def test_role_aggregate_append_permission(role_aggregate):
+    testable = role_aggregate
     testable.append_permission(permission=PermissionsEnum.AccountAdminModifyPermissions)
-    assert PermissionsEnum.AccountAdminModifyPermissions in testable.model.permissions
+    assert PermissionsEnum.AccountAdminModifyPermissions in testable.permissions
 
 
-def test_role_aggregate_append_permission_2(role_aggregate_testable):
-    testable = role_aggregate_testable
-    print(testable.model.permissions)
+def test_role_aggregate_append_permission_2(role_aggregate):
+    testable = role_aggregate
     with pytest.raises(PermissionError):
         testable.append_permission(permission=PermissionsEnum.ADMIN)
 
 
-def test_role_aggregate_remove_permission(role_aggregate_testable):
-    testable = role_aggregate_testable
+def test_role_aggregate_remove_permission(role_aggregate):
+    testable = role_aggregate
     testable.remove_permission(permission=PermissionsEnum.ADMIN)
-    assert PermissionsEnum.ADMIN not in testable.model.permissions
-    assert len(testable.model.permissions) == 0
+    assert PermissionsEnum.ADMIN not in testable.permissions
+    assert len(testable.permissions) == 0
 
 
-def test_role_aggregate_remove_permission_2(role_aggregate_testable):
-    testable = role_aggregate_testable
+def test_role_aggregate_remove_permission_2(role_aggregate):
+    testable = role_aggregate
     with pytest.raises(PermissionError):
         testable.remove_permission(permission=PermissionsEnum.AccountAddAccountAdmin)
 

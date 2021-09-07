@@ -16,3 +16,13 @@ class PermissionsEnum(Enum):
 class GenderEnum(Enum):
     MALE = 1
     FEMALE = 2
+
+class AccountStatusEnum(Enum):
+    ACTIVE = 1
+    INACTIVE = 2
+    OVER_DRAFTED = 3
+
+
+class TransactionMethodEnum(Enum):
+    ADD = 1
+    SUBTRACT = 2

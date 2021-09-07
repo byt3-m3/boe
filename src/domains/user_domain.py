@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List
 from uuid import UUID
 
-from eventsourcing.domain import AggregateEvent, event
+from eventsourcing.domain import event
 from src.domains.core_domain import CoreAggregate
 from src.enums import (
     PermissionsEnum,
@@ -21,34 +21,23 @@ from src.models.user_models import (
 @dataclass
 class RoleAggregate(CoreAggregate):
     model: RoleDataModel
+    permissions: List[PermissionsEnum]
 
     @event("AppendPermission")
     def append_permission(self, permission: PermissionsEnum):
         if isinstance(permission, PermissionsEnum):
-            if permission not in self.model.permissions:
-                self.model.permissions.append(permission)
+            if permission not in self.permissions:
+                self.permissions.append(permission)
             else:
                 raise PermissionError(f"{permission} Already Present in Permissions")
 
         else:
             raise TypeError(f"Must be of type: {PermissionsEnum}")
 
-        def remove_permission(self, permission: PermissionsEnum):
-            self.trigger_event(self.RemovePermissionEvent, permission=permission)
-
-        class RemovePermissionEvent(AggregateEvent):
-            permission: PermissionsEnum
-
-            def apply(self, aggregate: 'RoleAggregate') -> None:
-                if self.permission in aggregate.model.permissions:
-                    aggregate.model.permissions.remove(self.permission)
-                else:
-                    raise PermissionError(f"{self.permission} not in permission list")
-
     @event("RemovePermission")
     def remove_permission(self, permission: PermissionsEnum):
-        if permission in self.model.permissions:
-            self.model.permissions.remove(permission)
+        if permission in self.permissions:
+            self.permissions.remove(permission)
 
         else:
             raise PermissionError(f"{permission} Not present in list")

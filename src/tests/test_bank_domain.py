@@ -1,107 +1,98 @@
-import pytest
 from pytest import fixture
-from src.domains.bank_domain import BankAccount, AccountAdmin, AccountOwner, TransactionMethodEnum
-from src.enums import PermissionsEnum
-from src.models.user_models import ParentModel
-from src.roles import AdminRole
-@fixture()
-def account_admin_aggregate():
-    yield AccountAdmin(
-        user_model=ParentModel(
-            first_name="test_name",
-            last_name="test_name",
-            email="test@gmail.com",
-            roles=AdminRole()
-        ),
-        permissions=[PermissionsEnum.ADMIN]
+from src.domains.bank_domain import (
+    BankAccount,
+    AccountAdmin
+)
+from src.enums import (
+    PermissionsEnum,
+    TransactionMethodEnum
+)
+from src.models.bank_models import (
+    BankAccountDataModel,
+    AccountOwnerDataModel,
+    AccountAdminDataModel
+
+)
+
+
+@fixture
+def account_admin_data_model():
+    return AccountAdminDataModel(
+
     )
 
 
-@fixture()
-def account_owner_aggregate():
-    yield AccountOwner(
-        name='test_owner'
+@fixture
+def account_owner_data_model():
+    return AccountOwnerDataModel(
+
     )
 
 
-@fixture()
-def bank_account_aggregate(account_admin_aggregate, account_owner_aggregate):
-    yield BankAccount(
-        owner=account_owner_aggregate,
-        overdraft_protection=True,
+@fixture
+def bank_account_data_model(account_owner_data_model):
+    return BankAccountDataModel(
         balance=0,
-        admin_map={account_admin_aggregate.id: account_admin_aggregate}
+        owner=account_owner_data_model,
     )
 
 
-def test_bank_account_change_balance_add(bank_account_aggregate, account_admin_aggregate):
-    testable = bank_account_aggregate
-    testable: BankAccount
+@fixture
+def account_admin_aggregate(role_aggregate):
+    return AccountAdmin(
+        role=role_aggregate
+    )
 
-    testable.change_balance(
+
+@fixture
+def bank_account_aggregate(bank_account_data_model, account_admin_aggregate):
+    return BankAccount(
+        model=bank_account_data_model,
+    )
+
+
+@fixture
+def bank_account_w_protection_aggregate(bank_account_data_model, account_admin_aggregate):
+    return BankAccount(
+        model=bank_account_data_model,
+        overdraft_protection=True
+    )
+
+
+def test_bank_account_verify_role_permissions(bank_account_aggregate, role_aggregate):
+    bank_account_aggregate._verify_role_permissions(role=role_aggregate, expected_permissions=[PermissionsEnum.ADMIN])
+
+
+def test_bank_account_change_balance_add(bank_account_aggregate, role_aggregate):
+    subject = bank_account_aggregate
+    subject.change_balance(
         method=TransactionMethodEnum.ADD,
         value=10,
-        admin=account_admin_aggregate
+        role=role_aggregate
     )
 
-    events = testable.collect_events()
-
-    assert testable.balance == 10
-    assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
-    assert testable.is_overdrafted is False
+    assert subject.model.balance == 10
 
 
-def test_bank_account_change_balance_subtract_w_overdraft_protection(bank_account_aggregate, account_admin_aggregate):
-    testable = bank_account_aggregate
-    testable: BankAccount
-
-    testable.change_balance(
+def test_bank_account_change_balance_subtract(bank_account_aggregate, role_aggregate):
+    subject = bank_account_aggregate
+    subject.change_balance(
         method=TransactionMethodEnum.SUBTRACT,
         value=10,
-        admin=account_admin_aggregate
+        role=role_aggregate
     )
 
-    events = testable.collect_events()
-    assert testable.overdraft_protection is True
-    assert testable.is_overdrafted is False
-    assert testable.balance == 0
-    assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
+    assert subject.model.balance == -10
 
 
-def test_bank_account_change_balance_subtract_wo_overdraft_protection(bank_account_aggregate, account_admin_aggregate):
-    testable = bank_account_aggregate
-    testable: BankAccount
-
-    testable.disable_overdraft_protection(admin=account_admin_aggregate)
-
-    testable.change_balance(
+def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protection_aggregate, role_aggregate):
+    subject = bank_account_w_protection_aggregate
+    subject.change_balance(
         method=TransactionMethodEnum.SUBTRACT,
         value=10,
-        admin=account_admin_aggregate
+        role=role_aggregate
     )
+    events = subject.collect_events()
 
-    events = testable.collect_events()
-
-    assert testable.is_overdrafted is True
-    assert testable.balance == -10
-    assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
-    assert isinstance(events[2], testable.AccountOverdraftedEvent)
-
-
-def test_bank_account_invalid_permission(bank_account_aggregate, account_admin_aggregate):
-    testable = bank_account_aggregate
-    testable: BankAccount
-
-    testable.delete_account_admin(account_admin_aggregate, target_id=account_admin_aggregate.id)
-    with pytest.raises(PermissionError):
-        testable.change_balance(
-            method=TransactionMethodEnum.SUBTRACT,
-            value=10,
-            admin=account_admin_aggregate
-        )
-
-    events = testable.collect_events()
-
-    assert testable.is_overdrafted is False
-    assert testable.balance == 0
-    assert isinstance(events[len(events) - 1], testable.PermissionEvent)
+    assert isinstance(events[1], subject.OverDraftProtectionEvent)
+    assert subject.model.balance == 0

@@ -6,7 +6,7 @@ from src.domains.core_domain import CoreAggregate
 from src.domains.user_domain import RoleAggregate
 from src.enums import AccountStatusEnum, TransactionMethodEnum
 from src.models.bank_models import BankAccountDataModel
-from src.models.user_models import PermissionsEnum
+from src.models.user_models import PermissionsEnum, ChildDataModel, AdultDataModel
 from src.roles import system_role
 
 

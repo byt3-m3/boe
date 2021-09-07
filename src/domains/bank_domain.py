@@ -18,6 +18,11 @@ class AccountOwner(Aggregate):
         value: str
 
 
+class AccountAdmin(Aggregate):
+    model: AdultDataModel
+    role: RoleAggregate
+
+
 @dataclass
 class BankAccount(CoreAggregate):
     model: BankAccountDataModel

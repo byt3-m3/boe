@@ -11,6 +11,7 @@ from src.models.user_models import PermissionsEnum
 from src.roles import system_role
 from src.utils.aggregate_utils import verify_aggregate_permissions
 
+
 @dataclass
 class AccountOwner(Aggregate):
     name: str

@@ -11,7 +11,8 @@ from eventsourcing.domain import AggregateEvent, event
 from typing import List, Dict
 from uuid import UUID
 from src.enums import (
-    PermissionsEnum
+    PermissionsEnum,
+    GenderEnum
 
 )
 
@@ -20,135 +21,145 @@ from src.enums import (
 class RoleAggregate(CoreAggregate):
     model: RoleDataModel
 
+    @event("AppendPermission")
     def append_permission(self, permission: PermissionsEnum):
-        self.trigger_event(self.AppendPermissionEvent, permission=permission)
-
-    def remove_permission(self, permission: PermissionsEnum):
-        self.trigger_event(self.RemovePermissionEvent, permission=permission)
-
-    class AppendPermissionEvent(AggregateEvent):
-        permission: PermissionsEnum
-
-        def apply(self, aggregate: 'RoleAggregate') -> None:
-            if self.permission not in aggregate.model.permissions:
-                aggregate.model.permissions.append(self.permission)
+        if isinstance(permission, PermissionsEnum):
+            if permission not in self.model.permissions:
+                self.model.permissions.append(permission)
             else:
-                raise PermissionError(f"{self.permission} Already Present in Permissions")
+                raise PermissionError(f"{permission} Already Present in Permissions")
 
-    class RemovePermissionEvent(AggregateEvent):
-        permission: PermissionsEnum
+        else:
+            raise TypeError(f"Must be of type: {PermissionsEnum}")
 
-        def apply(self, aggregate: 'RoleAggregate') -> None:
-            if self.permission in aggregate.model.permissions:
-                aggregate.model.permissions.remove(self.permission)
+        def remove_permission(self, permission: PermissionsEnum):
+            self.trigger_event(self.RemovePermissionEvent, permission=permission)
+
+        class AppendPermissionEvent(AggregateEvent):
+            permission: PermissionsEnum
+
+            def apply(self, aggregate: 'RoleAggregate') -> None:
+                if self.permission not in aggregate.model.permissions:
+                    aggregate.model.permissions.append(self.permission)
+                else:
+                    raise PermissionError(f"{self.permission} Already Present in Permissions")
+
+        class RemovePermissionEvent(AggregateEvent):
+            permission: PermissionsEnum
+
+            def apply(self, aggregate: 'RoleAggregate') -> None:
+                if self.permission in aggregate.model.permissions:
+                    aggregate.model.permissions.remove(self.permission)
+                else:
+                    raise PermissionError(f"{self.permission} not in permission list")
+
+    @dataclass
+    class UserAccountAggregate(CoreAggregate):
+        model: UserDataModel
+        role_mapping: Dict[UUID, RoleAggregate]
+
+        @event("UpdateFirstName")
+        def update_first_name(self, value):
+            self.model.first_name = value
+
+        @event("UpdateLastName")
+        def update_last_name(self, value):
+            self.model.last_name = value
+
+        @event("UpdateEmail")
+        def update_email(self, value):
+            self.model.email = value
+
+        @event("AddRoleEvent")
+        def add_role(self, role: RoleAggregate):
+            self.role_mapping[role.id] = role
+
+        @event("RemoveRoleEvent")
+        def remove_role(self, role: RoleAggregate):
+            self.role_mapping.pop(role.id)
+
+    @dataclass
+    class ChildAggregate(UserAccountAggregate):
+        model: ChildDataModel
+
+        @event("UpdateGender")
+        def update_gender(self, value: GenderEnum):
+            if isinstance(value, GenderEnum):
+                self.model.gender = value
             else:
-                raise PermissionError(f"{self.permission} not in permission list")
+                raise TypeError(f"Must be of type: {GenderEnum}")
 
+        @event("UpdateAge")
+        def update_age(self, value: int):
+            self.model.age = value
 
-@dataclass
-class UserAccountAggregate(CoreAggregate):
-    model: UserDataModel
-    role_mapping: Dict[UUID, RoleAggregate]
+        @event("UpdateGrade")
+        def update_grade(self, value: int):
+            if value > 12:
+                raise ValueError("Invalid Value Provided, value must be < 12")
 
-    def add_role(self, role: RoleAggregate):
-        self.trigger_event(
-            self.AddRoleEvent,
-            role=role
-        )
+            self.model.age = value
 
-    def remove_role(self, role: RoleAggregate):
-        self.trigger_event(
-            self.RemoveRoleEvent,
-            role=role
-        )
+    @dataclass
+    class AdultAggregate(UserAccountAggregate):
+        model: AdultDataModel
 
-    @event("ChangeFirstName")
-    def change_first_name(self, value):
-        self.model.first_name = value
+    @dataclass
+    class FamilyAggregate(CoreAggregate):
+        model: FamilyDataModel
+        _children_mapping: Dict[UUID, 'ChildAggregate'] = field(default_factory=dict)
+        _parent_mapping: Dict[UUID, 'AdultAggregate'] = field(default_factory=dict)
 
-    @event("ChangeLastName")
-    def change_first_name(self, value):
-        self.model.last_name = value
+        def get_child(self, child: ChildAggregate):
+            return self._children_mapping.get(child.id)
 
-    @event("ChangeEmail")
-    def change_first_name(self, value):
-        self.model.email = value
+        def get_parent(self, parent: AdultAggregate):
+            return self._parent_mapping.get(parent.id)
 
-    @event("AddRoleEvent")
-    def add_role(self, role: RoleAggregate):
-        self.role_mapping[role.id] = role
+        def add_child(self, child: ChildAggregate):
+            self.trigger_event(
+                self.AddChildEvent,
+                child=child
+            )
 
-    @event("RemoveRoleEvent")
-    def remove_role(self, role: RoleAggregate):
-        self.role_mapping.pop(role.id)
+        def remove_child(self, child: ChildAggregate):
+            self.trigger_event(
+                self.RemoveChildEvent,
+                child=child
+            )
 
+        def add_parent(self, parent: AdultAggregate):
+            self.trigger_event(
+                self.AddParentEvent,
+                parent=parent
+            )
 
-@dataclass
-class ChildAggregate(UserAccountAggregate):
-    model: ChildDataModel
+        def remove_parent(self, parent: AdultAggregate):
+            self.trigger_event(
+                self.RemoveParentEvent,
+                parent=parent
+            )
 
+        class AddParentEvent(AggregateEvent):
+            parent: AdultAggregate
 
-@dataclass
-class AdultAggregate(UserAccountAggregate):
-    model: AdultDataModel
+            def apply(self, aggregate: 'FamilyAggregate') -> None:
+                aggregate._parent_mapping[self.parent.id] = self.parent
 
+        class RemoveParentEvent(AggregateEvent):
+            parent: AdultAggregate
 
-@dataclass
-class FamilyAggregate(CoreAggregate):
-    model: FamilyDataModel
-    _children_mapping: Dict[UUID, 'ChildAggregate'] = field(default_factory=dict)
-    _parent_mapping: Dict[UUID, 'AdultAggregate'] = field(default_factory=dict)
+            def apply(self, aggregate: 'FamilyAggregate') -> None:
+                aggregate._parent_mapping.pop(self.parent.id)
 
-    def get_child(self, child: ChildAggregate):
-        return self._children_mapping.get(child.id)
+        class AddChildEvent(AggregateEvent):
+            child: ChildAggregate
 
-    def get_parent(self, parent: AdultAggregate):
-        return self._parent_mapping.get(parent.id)
+            def apply(self, aggregate: 'FamilyAggregate') -> None:
+                aggregate._children_mapping[self.child.id] = self.child
 
-    def add_child(self, child: ChildAggregate):
-        self.trigger_event(
-            self.AddChildEvent,
-            child=child
-        )
+        class RemoveChildEvent(AggregateEvent):
+            child: ChildAggregate
 
-    def remove_child(self, child: ChildAggregate):
-        self.trigger_event(
-            self.RemoveChildEvent,
-            child=child
-        )
-
-    def add_parent(self, parent: AdultAggregate):
-        self.trigger_event(
-            self.AddParentEvent,
-            parent=parent
-        )
-
-    def remove_parent(self, parent: AdultAggregate):
-        self.trigger_event(
-            self.RemoveParentEvent,
-            parent=parent
-        )
-
-    class AddParentEvent(AggregateEvent):
-        parent: AdultAggregate
-
-        def apply(self, aggregate: 'FamilyAggregate') -> None:
-            aggregate._parent_mapping[self.parent.id] = self.parent
-
-    class RemoveParentEvent(AggregateEvent):
-        parent: AdultAggregate
-
-        def apply(self, aggregate: 'FamilyAggregate') -> None:
-            aggregate._parent_mapping.pop(self.parent.id)
-
-    class AddChildEvent(AggregateEvent):
-        child: ChildAggregate
-
-        def apply(self, aggregate: 'FamilyAggregate') -> None:
-            aggregate._children_mapping[self.child.id] = self.child
-
-    class RemoveChildEvent(AggregateEvent):
-        child: ChildAggregate
-
-        def apply(self, aggregate: 'FamilyAggregate') -> None:
-            aggregate._children_mapping.pop(self.child.id)
+            def apply(self, aggregate: 'FamilyAggregate') -> None:
+                aggregate._children_mapping.pop(self.child.id)

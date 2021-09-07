@@ -21,7 +21,6 @@ class ChildDataModel(UserDataModel):
     gender: GenderEnum
     age: int
     grade: int
-    nationality: str
 
 
 @dataclass

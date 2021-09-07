@@ -146,9 +146,21 @@ def test_user_account_aggregate_remove_role(user_account_aggregate_testable, rol
 
 def test_user_account_aggregate_change_first_name(user_account_aggregate_testable):
     subject = user_account_aggregate_testable
-    subject.change_first_name("New Name")
+    subject.update_first_name("New Name")
     print(subject.collect_events())
     assert subject.model.first_name == "New Name"
+
+
+def test_user_account_aggregate_update_email(user_account_aggregate_testable):
+    subject = user_account_aggregate_testable
+    subject.update_email("New Name")
+    assert subject.model.email == "New Name"
+
+
+def test_user_account_aggregate_update_last_name(user_account_aggregate_testable):
+    subject = user_account_aggregate_testable
+    subject.update_last_name("New Name")
+    assert subject.model.last_name == "New Name"
 
 
 def test_role_aggregate_append_permission(role_aggregate_testable):
@@ -174,3 +186,26 @@ def test_role_aggregate_remove_permission_2(role_aggregate_testable):
     testable = role_aggregate_testable
     with pytest.raises(PermissionError):
         testable.remove_permission(permission=PermissionsEnum.AccountAddAccountAdmin)
+
+
+def test_child_aggregate(child_aggregate_testable):
+    subject = child_aggregate_testable
+    FNAME = "Bugs"
+    LNAME = "Bunny"
+    EMAIL = "bugs@gmail.com"
+
+    subject.update_first_name(value=FNAME)
+    subject.update_last_name(value=LNAME)
+    subject.update_email(value=EMAIL)
+    subject.update_gender(value=GenderEnum.MALE)
+
+    assert subject.model.first_name == FNAME
+    assert subject.model.last_name == LNAME
+    assert subject.model.email == EMAIL
+    assert subject.model.gender == GenderEnum.MALE
+
+
+def test_child_aggregate_update_grade_value_error(child_aggregate_testable):
+    subject = child_aggregate_testable
+    with pytest.raises(ValueError):
+        subject.update_grade(13)

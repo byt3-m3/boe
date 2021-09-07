@@ -121,8 +121,14 @@ class BankAccount(CoreAggregate):
         if self._verify_role_permissions(role=role, expected_permissions=_permissions):
             self.overdraft_protection = True
 
-    def disable_overdraft_protection(self, admin: AccountAdmin):
-        self.trigger_event(self.DisableOverDraftProtectionEvent, admin=admin)
+    @event("DisableOverDraftProtection")
+    def disable_overdraft_protection(self, role: RoleAggregate):
+        _permissions = [
+            PermissionsEnum.ADMIN,
+            PermissionsEnum.AccountModifyOverdraftProtection
+        ]
+        if self._verify_role_permissions(role=role, expected_permissions=_permissions):
+            self.overdraft_protection = False
 
     def validate_admin(self, expected_admin: AccountAdmin):
         if not self.verify_admin(expected_admin=expected_admin):
@@ -182,17 +188,6 @@ class BankAccount(CoreAggregate):
     class SetAccountOwnerEvent(AggregateEvent):
         admin: AccountAdmin
         owner: AccountOwner
-
-    class DisableOverDraftProtectionEvent(AggregateEvent):
-        admin: AccountAdmin
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountModifyOverdraftProtection
-        ]
-
-        def apply(self, aggregate: 'BankAccount') -> None:
-            if verify_aggregate_permissions(aggergate=self.admin, expected_permissions=self._permissions):
-                aggregate.overdraft_protection = False
 
     class OverDraftProtectionEvent(AggregateEvent):
         context: Any

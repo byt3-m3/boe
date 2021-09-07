@@ -1,7 +1,6 @@
 from pytest import fixture
 from src.domains.bank_domain import (
     BankAccount,
-AggregateEvent,
     AccountAdmin
 )
 from src.enums import (
@@ -106,11 +105,20 @@ def test_bank_account_change_status(bank_account_aggregate, role_aggregate):
 
     assert subject.status == AccountStatusEnum.INACTIVE
 
-def test_bank_account_enable_overdraft_protection(bank_account_aggregate, role_aggregate):
 
+def test_bank_account_enable_overdraft_protection(bank_account_aggregate, role_aggregate):
     subject = bank_account_aggregate
     subject.enable_overdraft_protection(role=role_aggregate)
     events = subject.collect_events()
 
     assert isinstance(events[1], subject.EnableOverDraftProtection)
     assert subject.overdraft_protection == True
+
+
+def test_bank_account_enable_overdraft_protection(bank_account_aggregate, role_aggregate):
+    subject = bank_account_aggregate
+    subject.disable_overdraft_protection(role=role_aggregate)
+    events = subject.collect_events()
+
+    assert isinstance(events[1], subject.DisableOverDraftProtection)
+    assert subject.overdraft_protection == False

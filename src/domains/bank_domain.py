@@ -69,7 +69,7 @@ class BankAccount(CoreAggregate):
         else:
             return False
 
-    @event
+    @event("ChangeBalance")
     def change_balance(self, method: TransactionMethodEnum, value: float, role: RoleAggregate):
         if self._verify_role_permissions(
                 role=role,
@@ -103,7 +103,7 @@ class BankAccount(CoreAggregate):
                         context=f'Account Overdrafted: "{future_balance}"',
                     )
 
-    @event
+    @event("ChangeStatus")
     def change_status(self, status: AccountStatusEnum, role: RoleAggregate):
         _permissions = [
             PermissionsEnum.ADMIN,

@@ -11,8 +11,8 @@ from src.domains.user_domain import (
     UserDataModel,
     RoleAggregate
 )
-from src.models.user_models import RoleDataModel, PermissionsEnum
 from src.enums import GenderEnum
+from src.models.user_models import PermissionsEnum
 
 
 @fixture
@@ -22,9 +22,6 @@ def user_data_model():
         last_name='test_last_name',
         email="test_email"
     )
-
-
-
 
 
 @fixture

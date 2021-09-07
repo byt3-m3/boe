@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import List, Any
-from uuid import UUID
 
 from eventsourcing.domain import Aggregate, AggregateEvent, event
 from src.domains.core_domain import CoreAggregate
@@ -9,7 +8,6 @@ from src.enums import AccountStatusEnum, TransactionMethodEnum
 from src.models.bank_models import BankAccountDataModel
 from src.models.user_models import PermissionsEnum
 from src.roles import system_role
-from src.utils.aggregate_utils import verify_aggregate_permissions
 
 
 @dataclass
@@ -152,49 +150,6 @@ class BankAccount(CoreAggregate):
 
         def apply(self, aggregate: 'BankAccount') -> None:
             aggregate.is_overdrafted = True
-
-    class ClearOverDraftEvent(AggregateEvent):
-        admin: AccountAdmin
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountClearOverDraft
-        ]
-
-        def apply(self, aggregate: 'BankAccount') -> None:
-            aggregate.validate_admin(expected_admin=self.admin)
-            if verify_aggregate_permissions(aggergate=self.admin, expected_permissions=self._permissions):
-                aggregate.is_overdrafted = False
-
-    class AddAccountAdminEvent(AggregateEvent):
-        requesting_admin: AccountAdmin
-        new_admin: AccountAdmin
-
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountAddAccountAdmin
-        ]
-
-        def apply(self, aggregate: "BankAccount") -> None:
-            aggregate.validate_admin(expected_admin=self.requesting_admin)
-            if verify_aggregate_permissions(aggergate=self.requesting_admin, expected_permissions=self._permissions):
-                aggregate.admin_map[self.new_admin.id] = self.new_admin
-
-    class DeleteAccountAdminEvent(AggregateEvent):
-        admin: AccountAdmin
-        target_id: UUID
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountDeleteAccountAdmin
-        ]
-
-        def apply(self, aggregate: 'BankAccount') -> None:
-            aggregate.validate_admin(expected_admin=self.admin)
-            if verify_aggregate_permissions(aggergate=self.admin, expected_permissions=self._permissions):
-                aggregate.admin_map.pop(self.target_id)
-
-    class SetAccountOwnerEvent(AggregateEvent):
-        admin: AccountAdmin
-        owner: AccountOwner
 
     class OverDraftProtectionEvent(AggregateEvent):
         context: Any

@@ -27,9 +27,6 @@ class AccountAdmin(Aggregate):
 class BankAccount(CoreAggregate):
     model: BankAccountDataModel
     owner: AccountOwner
-    # status: AccountStatusEnum = AccountStatusEnum.ACTIVE
-    # is_overdrafted: bool = False
-    # overdraft_protection: bool = False
 
     def _check_overdraft(self, method: TransactionMethodEnum, value: float, role: RoleAggregate) -> (bool, float):
         future_balance = 0

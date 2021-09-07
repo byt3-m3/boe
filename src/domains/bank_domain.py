@@ -8,8 +8,8 @@ from src.domains.user_domain import RoleAggregate
 from src.enums import AccountStatusEnum, TransactionMethodEnum
 from src.models.bank_models import BankAccountDataModel
 from src.models.user_models import PermissionsEnum
+from src.roles import system_role
 from src.utils.aggregate_utils import verify_aggregate_permissions
-
 
 @dataclass
 class AccountOwner(Aggregate):
@@ -98,10 +98,7 @@ class BankAccount(CoreAggregate):
                 self.model.balance -= value
 
                 if self.model.balance < 0:
-                    self.trigger_event(
-                        self.AccountOverdraftedEvent,
-                        context=f'Account Overdrafted: "{future_balance}"',
-                    )
+                    self.trigger_overdraft(status=True, role=system_role)
 
     @event("ChangeStatus")
     def change_status(self, status: AccountStatusEnum, role: RoleAggregate):

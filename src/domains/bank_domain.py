@@ -12,7 +12,7 @@ from src.roles import system_role
 
 @dataclass
 class AccountOwner(Aggregate):
-    name: str
+    model: ChildDataModel
 
     class ChangeNameEvent(AggregateEvent):
         value: str
@@ -21,7 +21,7 @@ class AccountOwner(Aggregate):
 @dataclass
 class BankAccount(CoreAggregate):
     model: BankAccountDataModel
-
+    owner: AccountOwner
     status: AccountStatusEnum = AccountStatusEnum.ACTIVE
     is_overdrafted: bool = False
     overdraft_protection: bool = False

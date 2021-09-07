@@ -1,7 +1,9 @@
 from pytest import fixture
-from src.models.user_models import RoleDataModel
 from src.domains.user_domain import RoleAggregate
 from src.enums import PermissionsEnum
+from src.models.user_models import RoleDataModel
+
+
 @fixture
 def role_data_model():
     yield RoleDataModel(

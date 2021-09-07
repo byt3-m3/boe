@@ -130,6 +130,15 @@ class BankAccount(CoreAggregate):
         if self._verify_role_permissions(role=role, expected_permissions=_permissions):
             self.overdraft_protection = False
 
+    @event("TriggerOverDraft")
+    def trigger_overdraft(self, status: bool, role: RoleAggregate):
+        _permissions = [
+            PermissionsEnum.ADMIN,
+            PermissionsEnum.AccountSetOverdraft
+        ]
+        if self._verify_role_permissions(role=role, expected_permissions=_permissions):
+            self.is_overdrafted = status
+
     def validate_admin(self, expected_admin: AccountAdmin):
         if not self.verify_admin(expected_admin=expected_admin):
             msg = f"Admin:'{expected_admin.name}' not associated with this account"

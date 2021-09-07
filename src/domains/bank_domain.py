@@ -123,12 +123,6 @@ class BankAccount(CoreAggregate):
         if self._verify_role_permissions(role=role, expected_permissions=_permissions):
             self.is_overdrafted = status
 
-    def validate_admin(self, expected_admin: AccountAdmin):
-        if not self.verify_admin(expected_admin=expected_admin):
-            msg = f"Admin:'{expected_admin.name}' not associated with this account"
-            self.trigger_event(self.PermissionEvent, context='msg')
-            raise PermissionError(msg)
-
     class AccountOverdraftedEvent(AggregateEvent):
         context: Any
         _permissions = [

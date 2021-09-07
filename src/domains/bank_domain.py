@@ -112,23 +112,9 @@ class BankAccount(CoreAggregate):
         if self._verify_role_permissions(role=role, expected_permissions=_permissions):
             self.status = status
 
-    def add_account_admin(self, requesting_admin: AccountAdmin, new_admin: AccountAdmin):
-        self.trigger_event(
-            self.AddAccountAdminEvent,
-            requesting_admin=requesting_admin,
-            new_admin=new_admin
-        )
-
-    def delete_account_admin(self, admin, target_id: UUID):
-        self.trigger_event(
-            self.DeleteAccountAdminEvent,
-            admin=admin,
-            target_id=target_id
-
-        )
-        pass
-
-    def enable_overdraft_protection(self, admin: AccountAdmin):
+    @event
+    def enable_overdraft_protection(self, role: RoleAggregate):
+        self._verify_role_permissions(role=role, )
         self.trigger_event(self.EnableOverDraftProtectionEvent, admin=admin)
 
     def disable_overdraft_protection(self, admin: AccountAdmin):
@@ -161,19 +147,6 @@ class BankAccount(CoreAggregate):
             aggregate.validate_admin(expected_admin=self.admin)
             if verify_aggregate_permissions(aggergate=self.admin, expected_permissions=self._permissions):
                 aggregate.is_overdrafted = False
-
-    class ChangeAccountStatusEvent(AggregateEvent):
-        admin: AccountAdmin
-        status: AccountStatusEnum
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountChangeStatus
-        ]
-
-        def apply(self, aggregate: 'BankAccount') -> None:
-            aggregate.validate_admin(expected_admin=self.admin)
-            if verify_aggregate_permissions(aggregate=self.admin, expected_permissions=self._permissions):
-                aggregate.status = self.status
 
     class AddAccountAdminEvent(AggregateEvent):
         requesting_admin: AccountAdmin

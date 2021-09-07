@@ -82,8 +82,11 @@ def test_bank_account_change_balance_subtract(bank_account_aggregate, role_aggre
         value=10,
         role=role_aggregate
     )
+    events = subject.collect_events()
 
+    assert isinstance(events[1], subject.TriggerOverDraft)
     assert subject.model.balance == -10
+    assert subject.is_overdrafted is True
 
 
 def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protection_aggregate, role_aggregate):

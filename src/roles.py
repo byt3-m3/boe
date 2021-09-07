@@ -1,8 +1,10 @@
-from src.models.user_models import RoleModel
 from src.enums import PermissionsEnum
 
-class AdminRole(RoleModel):
+class _SystemRole:
     name = "AdminRole"
     permissions = [
-        PermissionsEnum.ADMIN
+        PermissionsEnum.ADMIN,
+        PermissionsEnum.AccountSetOverdraft
     ]
+
+system_role = _SystemRole()

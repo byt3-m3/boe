@@ -1,7 +1,8 @@
 from pytest import fixture
 from src.domains.bank_domain import (
     BankAccount,
-    AccountAdmin
+    AccountAdmin,
+    AccountOwner
 )
 from src.enums import (
     PermissionsEnum,
@@ -10,8 +11,6 @@ from src.enums import (
 )
 from src.models.bank_models import (
     BankAccountDataModel,
-    AccountOwnerDataModel,
-    AccountAdminDataModel
 
 )
 
@@ -24,39 +23,42 @@ def account_admin_data_model():
 
 
 @fixture
-def account_owner_data_model():
-    return AccountOwnerDataModel(
-
-    )
-
-
-@fixture
-def bank_account_data_model(account_owner_data_model):
+def bank_account_data_model():
     return BankAccountDataModel(
         balance=0,
-        owner=account_owner_data_model,
+
     )
 
 
 @fixture
-def account_admin_aggregate(role_aggregate):
+def account_admin_aggregate(role_aggregate, adult_data_model):
     return AccountAdmin(
-        role=role_aggregate
+        role=role_aggregate,
+        model=adult_data_model
     )
 
 
 @fixture
-def bank_account_aggregate(bank_account_data_model, account_admin_aggregate):
+def bank_account_aggregate(bank_account_data_model, bank_account_owner_aggregate):
     return BankAccount(
         model=bank_account_data_model,
+        owner=bank_account_owner_aggregate
     )
 
 
 @fixture
-def bank_account_w_protection_aggregate(bank_account_data_model, account_admin_aggregate):
+def bank_account_w_protection_aggregate(bank_account_data_model, account_admin_aggregate, bank_account_owner_aggregate):
     return BankAccount(
         model=bank_account_data_model,
-        overdraft_protection=True
+        overdraft_protection=True,
+        owner=bank_account_owner_aggregate
+    )
+
+
+@fixture
+def bank_account_owner_aggregate(child_data_model):
+    return AccountOwner(
+        model=child_data_model
     )
 
 

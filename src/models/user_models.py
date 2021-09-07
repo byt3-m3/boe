@@ -1,30 +1,35 @@
 from dataclasses import dataclass
-
+from typing import List
 from src.enums import PermissionsEnum, GenderEnum
 
 
 @dataclass
-class UserModel:
-    first_name: str
-    last_name: str
-    email: str
-    roles: List[RoleModel]
-
-
-@dataclass
-class RoleModel:
+class RoleDataModel:
     name: str
     permissions: List[PermissionsEnum]
 
 
 @dataclass
-class ParentModel(UserModel):
+class UserDataModel:
+    first_name: str
+    last_name: str
+    email: str
+
+
+@dataclass
+class ChildDataModel(UserDataModel):
+    gender: GenderEnum
+    age: int
+    grade: int
+    nationality: str
+
+
+@dataclass
+class AdultDataModel(UserDataModel):
     pass
 
 
 @dataclass
-class ChildModel(UserModel):
-    gender: GenderEnum
-    age: int
-    grade: str
-    nationality: str
+class FamilyDataModel:
+    name: str
+    alias: str = None

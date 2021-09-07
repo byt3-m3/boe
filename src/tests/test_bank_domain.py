@@ -48,7 +48,7 @@ def test_bank_account_change_balance_add(bank_account_aggregate, account_admin_a
 
     assert testable.balance == 10
     assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
-    assert testable.overdrafted is False
+    assert testable.is_overdrafted is False
 
 
 def test_bank_account_change_balance_subtract_w_overdraft_protection(bank_account_aggregate, account_admin_aggregate):
@@ -63,7 +63,7 @@ def test_bank_account_change_balance_subtract_w_overdraft_protection(bank_accoun
 
     events = testable.collect_events()
     assert testable.overdraft_protection is True
-    assert testable.overdrafted is False
+    assert testable.is_overdrafted is False
     assert testable.balance == 0
     assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
 
@@ -82,7 +82,7 @@ def test_bank_account_change_balance_subtract_wo_overdraft_protection(bank_accou
 
     events = testable.collect_events()
 
-    assert testable.overdrafted is True
+    assert testable.is_overdrafted is True
     assert testable.balance == -10
     assert isinstance(events[len(events) - 1], testable.ChangeAccountBalanceEvent)
     assert isinstance(events[2], testable.AccountOverdraftedEvent)
@@ -102,6 +102,6 @@ def test_bank_account_invalid_permission(bank_account_aggregate, account_admin_a
 
     events = testable.collect_events()
 
-    assert testable.overdrafted is False
+    assert testable.is_overdrafted is False
     assert testable.balance == 0
     assert isinstance(events[len(events) - 1], testable.PermissionEvent)

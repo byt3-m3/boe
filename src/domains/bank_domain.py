@@ -7,7 +7,8 @@ from eventsourcing.domain import Aggregate, AggregateEvent
 from src.domains.core_domain import CoreAggregate
 from src.enums import PermissionsEnum
 from src.utils.aggregate_utils import verify_aggregate_permissions
-from src.models.user_models import ParentModel
+from src.models.user_models import PermissionsEnum
+
 
 class AccountStatusEnum(enum.Enum):
     ACTIVE = 1
@@ -36,7 +37,6 @@ class AccountAdmin(CoreAggregate):
     def append_permissions(self: "AccountAdmin", permissions: List[PermissionsEnum]):
         for p in permissions:
             if isinstance(p, PermissionsEnum):
-
                 self.append_permission(permission=p)
 
     def append_permission(self, permission: PermissionsEnum):
@@ -68,8 +68,9 @@ class BankAccount(CoreAggregate):
     owner: AccountOwner
     admin_map: Dict[UUID, AccountAdmin]
     status: AccountStatusEnum = AccountStatusEnum.ACTIVE
-    overdrafted: bool = False
+    is_overdrafted: bool = False
     overdraft_protection: bool = False
+
 
     def verify_admin(self, expected_admin: AccountAdmin) -> bool:
         if expected_admin.id in self.admin_map:
@@ -142,7 +143,7 @@ class BankAccount(CoreAggregate):
         ]
 
         def apply(self, aggregate: 'BankAccount') -> None:
-            aggregate.overdrafted = True
+            aggregate.is_overdrafted = True
 
     class ClearOverDraftEvent(AggregateEvent):
         admin: AccountAdmin
@@ -154,7 +155,7 @@ class BankAccount(CoreAggregate):
         def apply(self, aggregate: 'BankAccount') -> None:
             aggregate.validate_admin(expected_admin=self.admin)
             if verify_aggregate_permissions(aggergate=self.admin, expected_permissions=self._permissions):
-                aggregate.overdrafted = False
+                aggregate.is_overdrafted = False
 
     class ChangeAccountBalanceEvent(AggregateEvent):
         transaction_method: TransactionMethodEnum

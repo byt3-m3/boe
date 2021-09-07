@@ -21,9 +21,14 @@ BOE will utilize a subscription model that will enable free and premium users ac
 ### Standard Users 
 
 - Limit 2 children per family
+- Limit 5 active task per child 
 - Limit 5 assigned children per 
+- Limit 5 items in store 
 
 ### Premium Users 
+
+- Unlimited Children Per Family 
+- Unlimitied number of task per child.
 
 ## Functional Requirements
 
@@ -77,9 +82,79 @@ Parent
 
 Child 
 
-
+AccountAdmin
 
 ### Domains  
+
+**Common_domian**
+
+
+
+The common domain is a collection of Models and Aggregates that can be used in comoposition of more focused domain aggregates.  
+
+Data Models
+
+```python
+from dataclasses import dataclass
+from src.enums import PermissionsEnum, GenderEnum
+
+
+@dataclass
+class UserDataModel:
+    first_name: str
+    last_name: str
+    email: str
+    roles: List[RoleModel]
+
+
+@dataclass
+class RoleDataModel:
+    name: str
+    permissions: List[PermissionsEnum]
+
+
+@dataclass
+class ChildDataModel(UserModel):
+    gender: GenderEnum
+    age: int
+    grade: str
+    nationality: str
+
+      
+@dataclass
+class ParentDataModel:
+  name: str
+  alias: str 
+  adults: List[ParentDataModel]
+  children: List[ChildDataModel]
+    
+@dataclass
+class Adult(Aggregate):
+  model: ChildDataModel
+  family: Family
+  
+  class FamilyModifiedEvent(AggregateEvent):
+    action: EventActionsEnum
+
+@dataclass
+class Children(Aggregate):
+  model: ChildDataModel
+  family: Family
+  
+  class FamilyModifiedEvent(AggregateEvent):
+    
+```
+
+Common Enums
+
+```
+from enum import Enum
+
+class EventActionsEnum(Enum):
+	MODIFIED = 1
+```
+
+
 
 **Bank**
 
@@ -177,74 +252,40 @@ class AccountAggregate(Aggregate):
     
 ```
 
+ 
+
+**Tasks Domain**
+
+```python
+from dataclasses import dataclass 
+from enum import Enum
+
+class TaskStusEnum(Enum):
+  COMPLETED: 0
+  ASSIGNED: 1
+	REJECTED: 2
+  IN-PROGRESS: 3  
+  PendingVerfication: 4
+    
+class TaskAurthor(Aggergate)
+	model: common.ParentDataModel
+
+class TaskAsignee(Aggergate)
+	model: common.ChildDataModel    
+    
+@dataclass
+class Task(Aggergate):
+  model: TaskDataModel
+  assignee: TaskAsignee
+  status: TaskStatus
+  assigned_date: datetime 
+  has_due_date: bool 
+  due_date: datetime 
+  
+  
+```
 
 
-DataModels:
-
-- TransactionValue
-  - Properties
-    - data
-
-Aggregates:  
-
-- BankAccountAggregate 
-
-  - Properites
-    - Balance: float 
-    - Owner: AccountOwnerAggregate 
-    - Admins: List[AccountAdminAggregate]
-    - Status:  AccountStatusEnum
-  - AggregateEvents:
-    - CreateEvent
-    - CloseAccountEvent
-    - SetAccoutOwnerEvent
-    - AddAccountAdminEvent
-    - RemoveAccountAdminEvent
-    - ChangeAccountbalanceEvent
-    - ChangeAccountStatusEvent
-
-- AccountAdminAggregate
-
-  - Properties:
-    - name
-  - AggregateEvents: 
-    - ChangeNameEvent
-    - AddPermissionEvent 
-
-- AccountOwnerAggregate 
-
-  - AggregateEvents 
-
-    - CreatEvent
-
-    - ChangeUserNameEvent
-
-    - AddPermissionEvent 
-
-      
-
-- TransactionAggregate
-
-  - Properites
-    - Method: TransactionMethodEnum 
-    - values: List[TransactionValue]
-
-Enum:
-
-- AccountStatusEnum
-  - ACTIVE
-  - INACTIVE 
-  - OVERDRAFTED 
-- PermissionsEnum
-- TransactionMethodEnum
-  - ADD
-  - SUBTRACT
-
-
-
-**Chore Libarary ** 
-
-**Tasks** 
 
 Aggregates:
 

@@ -63,6 +63,7 @@ class BankAccount(CoreAggregate):
             return False
 
     def verify_admin(self, expected_admin: AccountAdmin) -> bool:
+        # TODO: Remove Once Vents are convereted
         if expected_admin.id in self.admin_map:
             return True
         else:
@@ -102,12 +103,14 @@ class BankAccount(CoreAggregate):
                         context=f'Account Overdrafted: "{future_balance}"',
                     )
 
-    def change_status(self, status: AccountStatusEnum, admin: AccountAdmin):
-        self.trigger_event(
-            self.ChangeAccountStatusEvent,
-            status=status,
-            admin=admin
-        )
+    @event
+    def change_status(self, status: AccountStatusEnum, role: RoleAggregate):
+        _permissions = [
+            PermissionsEnum.ADMIN,
+            PermissionsEnum.AccountChangeStatus
+        ]
+        if self._verify_role_permissions(role=role, expected_permissions=_permissions):
+            self.status = status
 
     def add_account_admin(self, requesting_admin: AccountAdmin, new_admin: AccountAdmin):
         self.trigger_event(

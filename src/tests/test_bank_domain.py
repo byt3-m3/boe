@@ -5,7 +5,8 @@ from src.domains.bank_domain import (
 )
 from src.enums import (
     PermissionsEnum,
-    TransactionMethodEnum
+    TransactionMethodEnum,
+    AccountStatusEnum
 )
 from src.models.bank_models import (
     BankAccountDataModel,
@@ -96,3 +97,10 @@ def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protec
 
     assert isinstance(events[1], subject.OverDraftProtectionEvent)
     assert subject.model.balance == 0
+
+
+def test_bank_account_change_status(bank_account_aggregate, role_aggregate):
+    subject = bank_account_aggregate
+    subject.change_status(status=AccountStatusEnum.INACTIVE, role=role_aggregate)
+
+    assert subject.status == AccountStatusEnum.INACTIVE

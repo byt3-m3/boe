@@ -1,15 +1,6 @@
-from dataclasses import dataclass, field
-from typing import List
-from src.enums import PermissionsEnum, AccountStatusEnum
+from dataclasses import dataclass
 
 
-@dataclass
-class AccountOwnerDataModel:
-    pass
-
-@dataclass
-class AccountAdminDataModel:
-    pass
 
 
 @dataclass

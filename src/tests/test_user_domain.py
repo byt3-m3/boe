@@ -48,7 +48,6 @@ def child_aggregate_testable(role_aggregate_testable):
             email="test@gmail.com",
             age=5,
             grade=3,
-            nationality="USA",
             gender=GenderEnum.MALE
 
         ),
@@ -171,6 +170,7 @@ def test_role_aggregate_append_permission(role_aggregate_testable):
 
 def test_role_aggregate_append_permission_2(role_aggregate_testable):
     testable = role_aggregate_testable
+    print(testable.model.permissions)
     with pytest.raises(PermissionError):
         testable.append_permission(permission=PermissionsEnum.ADMIN)
 

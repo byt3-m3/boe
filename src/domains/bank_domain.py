@@ -7,7 +7,7 @@ from eventsourcing.domain import Aggregate, AggregateEvent
 from src.domains.core_domain import CoreAggregate
 from src.enums import PermissionsEnum
 from src.utils.aggregate_utils import verify_aggregate_permissions
-from src.models.user_models import PermissionsEnum
+from src.models.user_models import PermissionsEnum, AdultDataModel
 
 
 class AccountStatusEnum(enum.Enum):

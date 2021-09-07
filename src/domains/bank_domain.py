@@ -19,11 +19,6 @@ class AccountOwner(Aggregate):
 
 
 @dataclass
-class AccountAdmin(CoreAggregate):
-    role: RoleAggregate
-
-
-@dataclass
 class BankAccount(CoreAggregate):
     model: BankAccountDataModel
 

@@ -75,7 +75,10 @@ def adult_aggregate(role_aggregate):
 @fixture
 def family_aggregate() -> FamilyAggregate:
     return FamilyAggregate(
-        name="test_family_name"
+        name="test_family_name",
+        alias="test_alias",
+        parents=[],
+        children=[]
     )
 
 

@@ -11,7 +11,9 @@ class PermissionsEnum(Enum):
     AccountClearOverDraft = 6
     AccountAddAccountAdmin = 7
     AccountDeleteAccountAdmin = 8
+    Parent = 98
     AccountOwner = 99
+    Child = 100
 
 
 class GenderEnum(Enum):

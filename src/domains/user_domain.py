@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, List
+from dataclasses import dataclass
+from typing import List
 from uuid import UUID
 
 from eventsourcing.domain import event, Aggregate
@@ -97,28 +97,24 @@ class AdultAggregate(UserAccountAggregate):
 @dataclass
 class FamilyAggregate(Aggregate):
     name: str
-    alias: str = field(default_factory=str)
-    _children_mapping: Dict[UUID, 'ChildAggregate'] = field(default_factory=dict)
-    _parent_mapping: Dict[UUID, 'AdultAggregate'] = field(default_factory=dict)
+    alias: str
+    parents: List[UUID]
+    children: List[UUID]
 
-    def get_child(self, child: 'ChildAggregate'):
-        return self._children_mapping.get(child.id)
-
-    def get_parent(self, parent: 'AdultAggregate'):
-        return self._parent_mapping.get(parent.id)
-
-    @event("AddChild")
-    def add_child(self, child: 'ChildAggregate'):
-        self._children_mapping[child.id] = child
+    @event("AppendChild")
+    def append_child(self, aggregate_id: UUID):
+        if aggregate_id not in self.children:
+            self.children.append(aggregate_id)
 
     @event("RemoveChild")
-    def remove_child(self, child: 'ChildAggregate'):
-        self._children_mapping.pop(child.id)
+    def remove_child(self, aggregate_id: UUID):
+        self.children.remove(aggregate_id)
 
-    @event("AddParent")
-    def add_parent(self, parent: 'AdultAggregate'):
-        self._parent_mapping[parent.id] = parent
+    @event("AppendParent")
+    def append_parent(self, aggregate_id: UUID):
+        if aggregate_id not in self.parents:
+            self.parents.append(aggregate_id)
 
     @event("RemoveParent")
-    def remove_parent(self, parent: 'AdultAggregate'):
-        self._parent_mapping.pop(parent.id)
+    def remove_parent(self, aggregate_id: UUID):
+        self.parents.remove(aggregate_id)

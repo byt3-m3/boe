@@ -1,10 +1,24 @@
+from src.domains.user_domain import RoleAggregate
 from src.enums import PermissionsEnum
 
-class _SystemRole:
-    name = "AdminRole"
-    permissions = [
+system_role = RoleAggregate(
+    name="AdminRole",
+    permissions=[
         PermissionsEnum.ADMIN,
         PermissionsEnum.AccountSetOverdraft
     ]
+)
 
-system_role = _SystemRole()
+SystemParentRole = RoleAggregate(
+    name="SystemParentRole",
+    permissions=[
+        PermissionsEnum.Parent
+    ]
+)
+
+SystemChildRole = RoleAggregate(
+    name="SystemChildRole",
+    permissions=[
+        PermissionsEnum.Child
+    ]
+)

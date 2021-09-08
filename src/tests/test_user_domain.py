@@ -2,39 +2,34 @@ from uuid import UUID
 
 import pytest
 from src.domains.user_domain import (
-    ChildAggregate,
-    AdultAggregate,
     RoleAggregate
 )
 from src.enums import GenderEnum, PermissionsEnum
 
 
-def test_family_aggregate_add_child(family_aggregate, child_aggregate):
-    family_aggregate.add_child(child_aggregate)
-    result = family_aggregate.get_child(child=child_aggregate)
-    assert isinstance(result, ChildAggregate)
+def test_family_aggregate_append_child(family_aggregate, child_aggregate):
+    family_aggregate.append_child(aggregate_id=child_aggregate.id)
+    assert child_aggregate.id in family_aggregate.children
 
 
 def test_family_aggregate_remove_child(family_aggregate, child_aggregate):
-    family_aggregate.add_child(child_aggregate)
-    family_aggregate.remove_child(child_aggregate)
-    result = family_aggregate.get_child(child_aggregate)
-    assert result is None
+    family_aggregate.append_child(aggregate_id=child_aggregate.id)
+    family_aggregate.remove_child(aggregate_id=child_aggregate.id)
+
+    assert child_aggregate.id not in family_aggregate.children
 
 
-def test_family_aggregate_add_parent(family_aggregate, adult_aggregate):
-    parent = adult_aggregate
-    family_aggregate.add_parent(parent)
-    result = family_aggregate.get_parent(parent)
-    assert isinstance(result, AdultAggregate)
+def test_family_aggregate_apend_parent(family_aggregate, adult_aggregate):
+    family_aggregate.append_parent(aggregate_id=adult_aggregate.id)
+
+    assert adult_aggregate.id in family_aggregate.parents
 
 
 def test_family_aggregate_remove_parent(family_aggregate, adult_aggregate):
-    parent = adult_aggregate
-    family_aggregate.add_parent(parent)
-    family_aggregate.remove_parent(parent=parent)
-    result = family_aggregate.get_parent(parent)
-    assert result is None
+    family_aggregate.append_parent(aggregate_id=adult_aggregate.id)
+    family_aggregate.remove_parent(aggregate_id=adult_aggregate.id)
+
+    assert adult_aggregate.id not in family_aggregate.parents
 
 
 def test_user_account_aggregate_add_role(user_account_aggregate, role_aggregate):

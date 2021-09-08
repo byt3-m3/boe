@@ -6,8 +6,7 @@ from src.domains.user_domain import (
     AdultAggregate,
     RoleAggregate
 )
-from src.enums import GenderEnum
-from src.models.user_models import PermissionsEnum
+from src.enums import GenderEnum, PermissionsEnum
 
 
 def test_family_aggregate_add_child(family_aggregate, child_aggregate):

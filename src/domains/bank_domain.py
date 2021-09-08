@@ -57,70 +57,47 @@ class BankAccount(CoreAggregate):
         self.owner = child_aggregate.id
 
     @event("ChangeBalance")
-    def change_balance(self, method: TransactionMethodEnum, value: float, roles: List[RoleAggregate]):
-        if self._verify_role_permissions(
-                roles=roles,
-                expected_permissions=[
-                    PermissionsEnum.ADMIN,
-                    PermissionsEnum.AccountChangeBalance
-                ]
-        ):
-            overdrafted, future_balance = self._check_overdraft(
-                method=method,
-                value=value,
-            )
-            if self.overdraft_protection:
-                if overdrafted:
-                    self.trigger_event(
-                        self.OverDraftProtectionEvent,
-                        context=f'Protected from Potential Overdraft: "{future_balance}"',
-                    )
-                    return
+    def change_balance(self, method: TransactionMethodEnum, value: float):
 
-            if method == TransactionMethodEnum.ADD:
-                self.balance += value
+        overdrafted, future_balance = self._check_overdraft(
+            method=method,
+            value=value,
+        )
+        if self.overdraft_protection:
+            if overdrafted:
+                self.trigger_event(
+                    self.OverDraftProtectionEvent,
+                    context=f'Protected from Potential Overdraft: "{future_balance}"',
+                )
+                return
 
-            if method == TransactionMethodEnum.SUBTRACT:
-                self.balance -= value
+        if method == TransactionMethodEnum.ADD:
+            self.balance += value
 
-                if self.balance < 0:
-                    self.trigger_overdraft(status=True, roles=[system_role])
+        if method == TransactionMethodEnum.SUBTRACT:
+            self.balance -= value
+
+            if self.balance < 0:
+                self.trigger_overdraft(status=True)
 
     @event("ChangeStatus")
-    def change_status(self, status: AccountStatusEnum, roles: List[RoleAggregate]):
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountChangeStatus
-        ]
-        if self._verify_role_permissions(roles=roles, expected_permissions=_permissions):
-            self.status = status
+    def change_status(self, status: AccountStatusEnum):
+        self.status = status
 
     @event("EnableOverDraftProtection")
-    def enable_overdraft_protection(self, roles: List[RoleAggregate]):
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountModifyOverdraftProtection
-        ]
-        if self._verify_role_permissions(roles=roles, expected_permissions=_permissions):
-            self.overdraft_protection = True
+    def enable_overdraft_protection(self):
+
+        self.overdraft_protection = True
 
     @event("DisableOverDraftProtection")
-    def disable_overdraft_protection(self, roles: List[RoleAggregate]):
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountModifyOverdraftProtection
-        ]
-        if self._verify_role_permissions(roles=roles, expected_permissions=_permissions):
-            self.overdraft_protection = False
+    def disable_overdraft_protection(self):
+
+        self.overdraft_protection = False
 
     @event("TriggerOverDraft")
-    def trigger_overdraft(self, status: bool, roles: List[RoleAggregate]):
-        _permissions = [
-            PermissionsEnum.ADMIN,
-            PermissionsEnum.AccountSetOverdraft
-        ]
-        if self._verify_role_permissions(roles=roles, expected_permissions=_permissions):
-            self.is_overdrafted = status
+    def trigger_overdraft(self, status: bool):
+
+        self.is_overdrafted = status
 
     class AccountOverdraftedEvent(AggregateEvent):
         context: Any

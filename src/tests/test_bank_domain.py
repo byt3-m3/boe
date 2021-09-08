@@ -3,7 +3,6 @@ from src.domains.bank_domain import (
     BankAccount
 )
 from src.enums import (
-    PermissionsEnum,
     TransactionMethodEnum,
     AccountStatusEnum
 )
@@ -24,28 +23,21 @@ def bank_account_w_protection_aggregate():
     )
 
 
-def test_bank_account_verify_role_permissions(bank_account_aggregate, role_aggregate):
-    bank_account_aggregate._verify_role_permissions(roles=[role_aggregate],
-                                                    expected_permissions=[PermissionsEnum.ADMIN])
-
-
-def test_bank_account_change_balance_add(bank_account_aggregate, role_aggregate):
+def test_bank_account_change_balance_add(bank_account_aggregate):
     subject = bank_account_aggregate
     subject.change_balance(
         method=TransactionMethodEnum.ADD,
-        value=10,
-        roles=[role_aggregate]
+        value=10
     )
 
     assert subject.balance == 10
 
 
-def test_bank_account_change_balance_subtract(bank_account_aggregate, role_aggregate):
+def test_bank_account_change_balance_subtract(bank_account_aggregate):
     subject = bank_account_aggregate
     subject.change_balance(
         method=TransactionMethodEnum.SUBTRACT,
-        value=10,
-        roles=[role_aggregate]
+        value=10
     )
     events = subject.collect_events()
 
@@ -54,12 +46,11 @@ def test_bank_account_change_balance_subtract(bank_account_aggregate, role_aggre
     assert subject.is_overdrafted is True
 
 
-def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protection_aggregate, role_aggregate):
+def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protection_aggregate):
     subject = bank_account_w_protection_aggregate
     subject.change_balance(
         method=TransactionMethodEnum.SUBTRACT,
-        value=10,
-        roles=[role_aggregate]
+        value=10
     )
     events = subject.collect_events()
 
@@ -68,35 +59,35 @@ def test_bank_account_w_protection_change_balance_subtract(bank_account_w_protec
     assert subject.is_overdrafted is False
 
 
-def test_bank_account_change_status(bank_account_aggregate, role_aggregate):
+def test_bank_account_change_status(bank_account_aggregate):
     subject = bank_account_aggregate
-    subject.change_status(status=AccountStatusEnum.INACTIVE, roles=[role_aggregate])
+    subject.change_status(status=AccountStatusEnum.INACTIVE)
 
     assert subject.status == AccountStatusEnum.INACTIVE
 
 
-def test_bank_account_enable_overdraft_protection(bank_account_aggregate, role_aggregate):
+def test_bank_account_enable_overdraft_protection(bank_account_aggregate):
     subject = bank_account_aggregate
-    subject.enable_overdraft_protection(roles=[role_aggregate])
+    subject.enable_overdraft_protection()
     events = subject.collect_events()
 
     assert isinstance(events[1], subject.EnableOverDraftProtection)
     assert subject.overdraft_protection == True
 
 
-def test_bank_account_disable_overdraft_protection(bank_account_aggregate, role_aggregate):
+def test_bank_account_disable_overdraft_protection(bank_account_aggregate):
     subject = bank_account_aggregate
-    subject.disable_overdraft_protection(roles=[role_aggregate])
+    subject.disable_overdraft_protection()
     events = subject.collect_events()
 
     assert isinstance(events[1], subject.DisableOverDraftProtection)
     assert subject.overdraft_protection == False
 
 
-def test_bank_account_trigger_overdraft(bank_account_aggregate, role_aggregate):
+def test_bank_account_trigger_overdraft(bank_account_aggregate):
     subject = bank_account_aggregate
     assert subject.is_overdrafted == False
-    subject.trigger_overdraft(status=True, roles=[role_aggregate])
+    subject.trigger_overdraft(status=True)
     events = subject.collect_events()
 
     assert isinstance(events[1], subject.TriggerOverDraft)

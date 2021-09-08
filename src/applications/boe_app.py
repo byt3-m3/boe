@@ -2,11 +2,27 @@ from uuid import UUID
 
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
-from src.domains.bank_domain import BankAccount, ChildAggregate, RoleAggregate, AdultAggregate
-from src.domains.user_domain import GenderEnum, PermissionsEnum, UserAccountAggregate
-from src.enums import AccountStatusEnum
-from src.transcoders import PermissionsEnumTranscoding, AccountStatusEnumTranscoding, GenderEnumTranscoding, \
+from src.domains.bank_domain import (
+    BankAccount,
+    ChildAggregate,
+    RoleAggregate,
+    AdultAggregate
+)
+from src.domains.user_domain import (
+
+    UserAccountAggregate
+)
+from src.enums import (
+    GenderEnum,
+    PermissionsEnum,
+    AccountStatusEnum
+)
+from src.transcoders import (
+    PermissionsEnumTranscoding,
+    AccountStatusEnumTranscoding,
+    GenderEnumTranscoding,
     RoleAggregateTranscoding
+)
 
 
 class BOEApplication(Application):
@@ -86,7 +102,6 @@ class BOEApplication(Application):
             last_name=last_name,
             email=email,
             roles=[parent_role.id]
-
 
         )
         self.save(adult_account, parent_role)

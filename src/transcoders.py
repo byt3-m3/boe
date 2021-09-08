@@ -1,19 +1,9 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
+
 from eventsourcing.persistence import Transcoding
-from src.models.user_models import ChildDataModel
-from src.models.bank_models import BankAccountDataModel
 from src.domains.user_domain import RoleAggregate
 from src.enums import GenderEnum, AccountStatusEnum, PermissionsEnum
 
-class ChildDataModelTranscoding(Transcoding):
-    type = ChildDataModel
-    name = "model"
-
-    def encode(self, o: ChildDataModel) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return ChildDataModel(**d)
 
 class RoleAggregateTranscoding(Transcoding):
     type = RoleAggregate
@@ -26,17 +16,6 @@ class RoleAggregateTranscoding(Transcoding):
         return RoleAggregate(**d)
 
 
-class BankAccountDataModelTranscoding(Transcoding):
-    type = BankAccountDataModel
-    name = "model"
-
-    def encode(self, o: BankAccountDataModel) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return BankAccountDataModel(**d)
-
-
 class GenderEnumTranscoding(Transcoding):
     type = GenderEnum
     name = "gender"
@@ -47,6 +26,7 @@ class GenderEnumTranscoding(Transcoding):
     def decode(self, d: int):
         return GenderEnum(d)
 
+
 class AccountStatusEnumTranscoding(Transcoding):
     type = AccountStatusEnum
     name = "status"
@@ -56,6 +36,7 @@ class AccountStatusEnumTranscoding(Transcoding):
 
     def decode(self, d: int):
         return AccountStatusEnum(d)
+
 
 class PermissionsEnumTranscoding(Transcoding):
     type = PermissionsEnum

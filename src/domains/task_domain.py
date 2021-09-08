@@ -1,9 +1,9 @@
 import datetime
 from dataclasses import dataclass, field
 from typing import List
+from uuid import UUID
 
 from eventsourcing.domain import Aggregate, event
-from uuid import UUID
 
 
 @dataclass
@@ -16,11 +16,11 @@ class TaskItem(Aggregate):
 class TaskAggregate(Aggregate):
     name: str
     description: str
-    assign_date: datetime
     due_date: datetime
     assignee: UUID
     attachments: List[bytes] = field(default_factory=list)
     items: List[UUID] = field(default_factory=list)
+    assign_date: datetime = field(default=None)
     is_complete: bool = field(default=False)
 
     @event

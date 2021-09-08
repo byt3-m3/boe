@@ -23,9 +23,13 @@ from src.transcoders import (
     GenderEnumTranscoding,
     RoleAggregateTranscoding
 )
-
+from src.utils.aggregate_utils import MongoRecorder
 
 class BOEApplication(Application):
+
+    def __init__(self):
+        super(BOEApplication, self).__init__()
+        self.events.recorder = MongoRecorder(db_host='192.168.1.5', db_port=27017)
 
     def _get_aggregate(self, aggregate_id: UUID):
         return self.repository.get(aggregate_id)

@@ -7,33 +7,6 @@ from src.enums import (
     TransactionMethodEnum,
     AccountStatusEnum
 )
-from src.models.bank_models import (
-    BankAccountDataModel,
-
-)
-
-
-@fixture
-def account_admin_data_model():
-    return AccountAdminDataModel(
-
-    )
-
-
-@fixture
-def bank_account_data_model():
-    return BankAccountDataModel(
-        balance=0,
-
-    )
-
-
-@fixture
-def account_admin_aggregate(role_aggregate, adult_data_model):
-    return AccountAdmin(
-        role=role_aggregate,
-        model=adult_data_model
-    )
 
 
 @fixture

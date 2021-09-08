@@ -2,25 +2,18 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 from uuid import UUID
 
-from eventsourcing.domain import event
+from eventsourcing.domain import event, Aggregate
 from src.domains.core_domain import CoreAggregate
 from src.enums import (
     PermissionsEnum,
     GenderEnum
 
 )
-from src.models.user_models import (
-    FamilyDataModel,
-    UserDataModel,
-    ChildDataModel,
-    AdultDataModel,
-    RoleDataModel
-)
 
 
 @dataclass
-class RoleAggregate(CoreAggregate):
-    model: RoleDataModel
+class RoleAggregate(Aggregate):
+    name: str
     permissions: List[PermissionsEnum]
 
     @event("AppendPermission")
@@ -45,61 +38,66 @@ class RoleAggregate(CoreAggregate):
 
 @dataclass
 class UserAccountAggregate(CoreAggregate):
-    model: UserDataModel
-    role_mapping: Dict[UUID, 'RoleAggregate']
+    first_name: str
+    last_name: str
+    email: str
+    roles: List[UUID]
 
     @event("UpdateFirstName")
     def update_first_name(self, value):
-        self.model.first_name = value
+        self.first_name = value
 
     @event("UpdateLastName")
     def update_last_name(self, value):
-        self.model.last_name = value
+        self.last_name = value
 
     @event("UpdateEmail")
     def update_email(self, value):
-        self.model.email = value
+        self.email = value
 
     @event("AddRoleEvent")
     def add_role(self, role: "RoleAggregate"):
-        self.role_mapping[role.id] = role
+        self.roles.append(role.id)
 
     @event("RemoveRoleEvent")
     def remove_role(self, role: "RoleAggregate"):
-        self.role_mapping.pop(role.id)
+        self.roles.remove(role.id)
 
 
 @dataclass
 class ChildAggregate(UserAccountAggregate):
-    model: ChildDataModel
+    gender: GenderEnum
+    age: int
+    grade: int
 
     @event("UpdateGender")
     def update_gender(self, value: GenderEnum):
         if isinstance(value, GenderEnum):
-            self.model.gender = value
+            self.gender = value
         else:
             raise TypeError(f"Must be of type: {GenderEnum}")
 
     @event("UpdateAge")
     def update_age(self, value: int):
-        self.model.age = value
+        self.age = value
 
     @event("UpdateGrade")
     def update_grade(self, value: int):
         if value > 12:
             raise ValueError("Invalid Value Provided, value must be < 12")
 
-        self.model.age = value
+        self.age = value
 
 
 @dataclass
 class AdultAggregate(UserAccountAggregate):
-    model: AdultDataModel
+    pass
 
 
 @dataclass
-class FamilyAggregate(CoreAggregate):
-    model: FamilyDataModel
+class FamilyAggregate(Aggregate):
+    name: str
+    alias: str = field(default_factory=str)
     _children_mapping: Dict[UUID, 'ChildAggregate'] = field(default_factory=dict)
     _parent_mapping: Dict[UUID, 'AdultAggregate'] = field(default_factory=dict)
 

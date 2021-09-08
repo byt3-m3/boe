@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from src.enums import AccountStatusEnum
+
 
 @dataclass
 class BankAccountDataModel:

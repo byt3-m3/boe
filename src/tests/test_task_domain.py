@@ -51,7 +51,7 @@ def test_task_aggregate_update_child(task_aggregate, child_aggregate):
     assert isinstance(events[2], task_aggregate.UpdateAssignee)
     assert isinstance(events[1], task_aggregate.UpdateAssignDate)
     assert task_aggregate.assignee is child
-    assert task_aggregate.assignee.model.first_name == "updated_fname"
+    assert task_aggregate.assignee.first_name == "updated_fname"
 
 
 def test_task_aggregate_set_complete(task_aggregate):

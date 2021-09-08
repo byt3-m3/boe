@@ -10,7 +10,8 @@ from src.utils.pymongo_utils import (
     get_client,
     get_collection,
     get_database,
-    get_item
+    get_item,
+    scan_items
 )
 
 
@@ -56,7 +57,8 @@ class MongoRecorder(AggregateRecorder):
         results = add_many_items(
             collection=self.collection,
             items=[asdict(event) for event in stored_events],
-            ordered=True
+            ordered=True,
+
         )
 
     def select_events(
@@ -69,11 +71,26 @@ class MongoRecorder(AggregateRecorder):
     ) -> List[StoredEvent]:
         cursor = get_item(collection=self.collection, item_id=originator_id, item_key='originator_id')
 
+        return self._prepare_return(cursor=cursor)
+
+    def scan_events(self):
+        cursor = scan_items(collection=self.collection)
+        return self._prepare_return(cursor=cursor)
+
+    def get_event_ids(self):
+        cursor = scan_items(collection=self.collection)
+        stored_events = self._prepare_return(cursor)
+        return [
+            event.originator_id for event in stored_events
+        ]
+
+    @staticmethod
+    def _prepare_return(cursor) -> List[StoredEvent]:
         return [
             StoredEvent(
                 originator_id=record['originator_id'],
                 topic=record['topic'],
                 originator_version=record['originator_version'],
-                state=bytes(record['state'])
+                state=record['state']
             ) for record in cursor
         ]

@@ -20,7 +20,7 @@ def boe_application():
 @fixture
 def boe_appication_w_account():
     app = BOEApplication()
-    app.create_new_accout(
+    app.create_new_account(
         owner_first_name="t",
         owner_last_name='test',
         role_name='TestRole',
@@ -34,7 +34,7 @@ def boe_appication_w_account():
 
 
 def _test_boe_application_create_new_accout(boe_application):
-    account = boe_application.create_new_accout(
+    account = boe_application.create_new_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',
@@ -49,7 +49,7 @@ def _test_boe_application_create_new_accout(boe_application):
 
 
 def test_boe_application_set_account_inactive(boe_application):
-    account = boe_application.create_new_accout(
+    account = boe_application.create_new_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',

@@ -23,9 +23,11 @@ from src.transcoders import (
     PermissionsEnumTranscoding,
     AccountStatusEnumTranscoding,
     GenderEnumTranscoding,
-    RoleAggregateTranscoding
+    RoleAggregateTranscoding,
+    BytesTranscoding
 )
 from src.utils.aggregate_utils import MongoRecorder
+
 
 class BOEApplication(Application):
 
@@ -46,8 +48,9 @@ class BOEApplication(Application):
         transcoder.register(GenderEnumTranscoding())
         transcoder.register(AccountStatusEnumTranscoding())
         transcoder.register(RoleAggregateTranscoding())
+        transcoder.register(BytesTranscoding())
 
-    def create_new_accout(
+    def create_new_account(
             self,
             owner_first_name: str,
             owner_last_name: str,
@@ -58,7 +61,8 @@ class BOEApplication(Application):
             admin_last_name: str,
             admin_email: str,
             owner_gender: GenderEnum,
-            beggining_balance: float = 0
+            beggining_balance: float = 0,
+            overdraft_protection: bool = False
     ) -> BankAccount:
         admin_role = RoleAggregate(
             name="AdminRole",
@@ -90,7 +94,8 @@ class BOEApplication(Application):
         account = BankAccount(
             balance=beggining_balance,
             owner=account_owner.id,
-            admin=admin.id
+            admin=admin.id,
+            overdraft_protection=overdraft_protection
         )
         self.save(admin_role, admin, owner_role, account, account_owner)
         return account
@@ -139,3 +144,11 @@ class BOEApplication(Application):
         self.save(task)
         return task
 
+    def scan_aggregates(self):
+        ids = self._list_originator_ids()
+        return [
+            self.repository.get(aggregate_id=_id) for _id in ids
+        ]
+
+    def _list_originator_ids(self):
+        return self.events.recorder.get_event_ids()

@@ -1,11 +1,14 @@
 from pytest import fixture
 from src.applications.boe_app import (
     BOEApplication,
-    GenderEnum,
     UserAccountAggregate,
     BankAccount
 )
-from src.enums import PermissionsEnum, AccountStatusEnum
+from src.enums import (
+    PermissionsEnum,
+    AccountStatusEnum,
+    GenderEnum
+)
 
 
 @fixture

@@ -3,13 +3,21 @@ from uuid import UUID
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 from src.domains.bank_domain import BankAccount, ChildAggregate, RoleAggregate, AdultAggregate
-from src.domains.user_domain import GenderEnum, PermissionsEnum
+from src.domains.user_domain import GenderEnum, PermissionsEnum, UserAccountAggregate
 from src.enums import AccountStatusEnum
 from src.transcoders import PermissionsEnumTranscoding, AccountStatusEnumTranscoding, GenderEnumTranscoding, \
     RoleAggregateTranscoding
 
 
 class BOEApplication(Application):
+
+    def _get_aggregate(self, aggregate_id: UUID):
+        return self.repository.get(aggregate_id)
+
+    def _get_roles_from_account_aggregate(self, account_admin: UserAccountAggregate):
+        role_ids = [role for role in account_admin.roles]
+        return [self._get_aggregate(role) for role in role_ids]
+
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(PermissionsEnumTranscoding())
@@ -66,16 +74,34 @@ class BOEApplication(Application):
         return account
 
     def get_account(self, aggregate_id: UUID):
-        return self.repository.get(aggregate_id)
+        return self._get_aggregate(aggregate_id)
+
+    def create_new_parent(self, first_name, last_name, email, role_name, permissions):
+        parent_role = RoleAggregate(
+            name=role_name,
+            permissions=permissions
+        )
+        adult_account = AdultAggregate(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            roles=[parent_role.id]
+
+
+        )
+        self.save(adult_account, parent_role)
+
+        return adult_account
 
     def set_account_inactive(self, aggregate_id: UUID):
         account = self.repository.get(aggregate_id=aggregate_id)
         account: BankAccount
 
-        account_admin = self.repository.get(aggregate_id=account.admin)
-        role_ids = [role for role in account_admin.roles]
-        roles = [self.repository.get(role) for role in role_ids]
+        account_admin = self._get_aggregate(aggregate_id=account.admin)
 
-        account.change_status(status=AccountStatusEnum.INACTIVE, roles=roles)
+        account.change_status(
+            status=AccountStatusEnum.INACTIVE,
+            roles=self._get_roles_from_account_aggregate(account_admin=account_admin)
+        )
 
         self.save(account)

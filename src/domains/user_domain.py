@@ -91,7 +91,7 @@ class ChildAggregate(UserAccountAggregate):
 
 @dataclass
 class AdultAggregate(UserAccountAggregate):
-    pass
+    roles: List[UUID]
 
 
 @dataclass

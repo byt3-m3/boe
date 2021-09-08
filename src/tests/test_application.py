@@ -2,6 +2,7 @@ from pytest import fixture
 from src.applications.boe_app import (
     BOEApplication,
     GenderEnum,
+    UserAccountAggregate,
     BankAccount
 )
 from src.enums import PermissionsEnum, AccountStatusEnum
@@ -61,3 +62,14 @@ def test_boe_application_set_account_inactive(boe_application):
     _account: BankAccount
 
     assert _account.status == AccountStatusEnum.INACTIVE
+
+
+def test_boe_app_create_new_parent(boe_application):
+    parent = boe_application.create_new_parent(
+        first_name='test',
+        last_name='test',
+        email='test@gmail.com',
+        role_name='test_role',
+        permissions=[PermissionsEnum.ADMIN]
+    )
+    assert isinstance(parent, UserAccountAggregate)

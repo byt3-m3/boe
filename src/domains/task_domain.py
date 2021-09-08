@@ -17,11 +17,11 @@ class TaskAggregate(Aggregate):
     name: str
     description: str
     due_date: datetime
-    assignee: UUID
     attachments: List[bytes] = field(default_factory=list)
-    items: List[UUID] = field(default_factory=list)
+    items: List[UUID] = field(default=list)
     assign_date: datetime = field(default=None)
     is_complete: bool = field(default=False)
+    assignee: UUID = field(default=None)
 
     @event
     def append_item(self, task_item_id: UUID):

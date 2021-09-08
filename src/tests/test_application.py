@@ -2,6 +2,7 @@ from pytest import fixture
 from src.applications.boe_app import (
     BOEApplication,
     UserAccountAggregate,
+    TaskAggregate,
     BankAccount
 )
 from src.enums import (
@@ -76,3 +77,14 @@ def test_boe_app_create_new_parent(boe_application):
         permissions=[PermissionsEnum.ADMIN]
     )
     assert isinstance(parent, UserAccountAggregate)
+
+
+def test_boe_app_create_task(boe_application, test_name, test_description, test_datetime):
+    task = boe_application.create_task(
+        name=test_name,
+        description=test_description,
+        due_date=test_datetime
+    )
+
+    assert isinstance(task, TaskAggregate)
+    assert task == boe_application.repository.get(aggregate_id=task.id)

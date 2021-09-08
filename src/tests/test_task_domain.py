@@ -10,9 +10,10 @@ def task_aggregate(child_aggregate, test_name, test_email, test_datetime, test_d
     return TaskAggregate(
         name=test_name,
         description=test_description,
-        # assign_date=clone_item(test_datetime),
         due_date=clone_item(test_datetime),
-        assignee=child_aggregate.id
+        items=[],
+        attachments=[]
+
     )
 
 

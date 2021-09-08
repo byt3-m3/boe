@@ -9,8 +9,10 @@ from src.domains.bank_domain import (
     AdultAggregate
 )
 from src.domains.user_domain import (
-
     UserAccountAggregate
+)
+from src.domains.task_domain import (
+    TaskAggregate
 )
 from src.enums import (
     GenderEnum,
@@ -124,3 +126,16 @@ class BOEApplication(Application):
         )
 
         self.save(account)
+
+    def create_task(self, name, description, due_date) -> TaskAggregate:
+        task = TaskAggregate(
+            name=name,
+            description=description,
+            due_date=due_date,
+            attachments=[],
+            items=[],
+            assignee=''
+        )
+        self.save(task)
+        return task
+

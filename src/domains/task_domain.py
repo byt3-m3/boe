@@ -17,6 +17,7 @@ class TaskAggregate(Aggregate):
     name: str
     description: str
     due_date: datetime
+    value: int
     attachments: List[bytes] = field(default_factory=list)
     items: List[UUID] = field(default=list)
     assign_date: datetime = field(default=None)

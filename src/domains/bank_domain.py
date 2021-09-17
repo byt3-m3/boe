@@ -6,17 +6,34 @@ from eventsourcing.domain import AggregateEvent, event
 from src.domains.core_domain import CoreAggregate
 from src.domains.user_domain import RoleAggregate, ChildAggregate, AdultAggregate
 from src.enums import AccountStatusEnum, TransactionMethodEnum, PermissionsEnum
-from src.roles import system_role
+from src.utils.core_utils import make_id
 
 
 @dataclass
 class BankAccount(CoreAggregate):
     balance: float
-    owner: UUID = field(default=None)
-    admin: UUID = field(default=None)
+    owner_id: UUID = field(default=None)
+    admin_id: UUID = field(default=None)
     status: AccountStatusEnum = AccountStatusEnum.ACTIVE
     is_overdrafted: bool = False
     overdraft_protection: bool = False
+
+    @classmethod
+    def create(cls, balance: float, owner_id: UUID, admin_id: UUID, overdraft_protection: bool):
+        return cls._create(
+            cls.Created,
+            id=cls.create_id(owner_id=owner_id),
+            balance=balance,
+            owner_id=owner_id,
+            admin_id=admin_id,
+            overdraft_protection=overdraft_protection,
+            status=AccountStatusEnum.ACTIVE,
+            is_overdrafted=False
+        )
+
+    @classmethod
+    def create_id(cls, owner_id):
+        return make_id(domain="bank_account", key=owner_id)
 
     def _check_overdraft(self, method: TransactionMethodEnum, value: float) -> (bool, float):
         future_balance = 0
@@ -50,11 +67,11 @@ class BankAccount(CoreAggregate):
 
     @event("UpdateAdmin")
     def update_admin(self, adult_aggregate: AdultAggregate):
-        self.admin = adult_aggregate.id
+        self.admin_id = adult_aggregate.id
 
     @event("UpdateOwner")
     def update_owner(self, child_aggregate: ChildAggregate):
-        self.owner = child_aggregate.id
+        self.owner_id = child_aggregate.id
 
     @event("ChangeBalance")
     def change_balance(self, method: TransactionMethodEnum, value: float):

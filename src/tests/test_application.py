@@ -1,14 +1,16 @@
+from uuid import UUID
+
 from pytest import fixture
 from src.applications.boe_app import (
     BOEApplication,
-    UserAccountAggregate,
     TaskAggregate,
-    BankAccount
+    RoleAggregate
 )
 from src.enums import (
     PermissionsEnum,
     AccountStatusEnum,
-    GenderEnum
+    GenderEnum,
+    TransactionMethodEnum
 )
 
 
@@ -33,8 +35,8 @@ def boe_appication_w_account():
     return app
 
 
-def _test_boe_application_create_new_accout(boe_application):
-    account = boe_application.create_new_account(
+def test_boe_application_create_new_accout(boe_application):
+    result_mapping = boe_application.create_new_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',
@@ -45,46 +47,78 @@ def _test_boe_application_create_new_accout(boe_application):
         admin_last_name='test',
         admin_email='test',
     )
-    assert isinstance(account, BankAccount)
-
-
-def test_boe_application_set_account_inactive(boe_application):
-    account = boe_application.create_new_account(
-        owner_first_name="t",
-        owner_last_name='test',
-        owner_email='test.com',
-        owner_age=5,
-        owner_grade=5,
-        owner_gender=GenderEnum.MALE,
-        admin_first_name='test',
-        admin_last_name='test',
-        admin_email='test',
-    )
-
-    boe_application.set_account_inactive(aggregate_id=account.id)
-    _account = boe_application.get_account(aggregate_id=account.id)
-    _account: BankAccount
-
-    assert _account.status == AccountStatusEnum.INACTIVE
+    assert isinstance(result_mapping, dict)
+    assert not False in [isinstance(_id, UUID) for _id in result_mapping.values()]
 
 
 def test_boe_app_create_new_parent(boe_application):
-    parent = boe_application.create_new_parent(
+    result_mapping = boe_application.create_new_parent(
         first_name='test',
         last_name='test',
         email='test@gmail.com',
         role_name='test_role',
         permissions=[PermissionsEnum.ADMIN]
     )
-    assert isinstance(parent, UserAccountAggregate)
+    assert isinstance(result_mapping, dict)
+
+    assert not False in [isinstance(_id, UUID) for _id in result_mapping.values()]
 
 
 def test_boe_app_create_task(boe_application, test_name, test_description, test_datetime):
-    task = boe_application.create_task(
+    task_id = boe_application.create_task(
         name=test_name,
         description=test_description,
         due_date=test_datetime
     )
 
-    assert isinstance(task, TaskAggregate)
-    assert task == boe_application.repository.get(aggregate_id=task.id)
+    assert isinstance(task_id, UUID)
+    assert task_id == boe_application.repository.get(aggregate_id=task_id).id
+
+
+def test_app_change_account_balance(boe_application):
+    result_mapping = boe_application.create_new_account(
+        owner_first_name="t",
+        owner_last_name='test',
+        owner_email='test.com',
+        owner_age=5,
+        owner_grade=5,
+        owner_gender=GenderEnum.MALE,
+        admin_first_name='test',
+        admin_last_name='test',
+        admin_email='test',
+    )
+    account_id = result_mapping['account_id']
+    boe_application.change_account_balance(
+        account_id=account_id,
+        val=50,
+        transaction_method=TransactionMethodEnum.ADD.value
+    )
+
+    account = boe_application.get_account(account_id=account_id)
+    assert account.balance == 50
+
+
+def test_app_change_account_status(boe_application):
+    result_mapping = boe_application.create_new_account(
+        owner_first_name="t",
+        owner_last_name='test',
+        owner_email='test.com',
+        owner_age=5,
+        owner_grade=5,
+        owner_gender=GenderEnum.MALE,
+        admin_first_name='test',
+        admin_last_name='test',
+        admin_email='test',
+    )
+    account_id = result_mapping['account_id']
+
+    boe_application.change_account_status(account_id=account_id, status=AccountStatusEnum.INACTIVE.value)
+
+    account = boe_application.get_account(account_id=account_id)
+    assert account.status == AccountStatusEnum.INACTIVE
+
+
+def test_app_create_role_aggeragates(boe_application):
+    role_id = boe_application.create_role(name='TestRole', permissions=[PermissionsEnum.ADMIN])
+    role = boe_application.get_role_aggeragates(role_ids=[role_id])[0]
+    assert isinstance(role, RoleAggregate)

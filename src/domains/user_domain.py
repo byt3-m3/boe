@@ -9,6 +9,7 @@ from src.enums import (
     GenderEnum
 
 )
+from src.utils.core_utils import make_id
 
 
 @dataclass
@@ -42,6 +43,13 @@ class UserAccountAggregate(CoreAggregate):
     last_name: str
     email: str
     roles: List[UUID]
+
+    @classmethod
+    def create(cls, first_name, last_name, email):
+        return cls._create(
+            event_class=cls.Created,
+            id=make_id(domain="users", key=f"{first_name}")
+        )
 
     @event("UpdateFirstName")
     def update_first_name(self, value):

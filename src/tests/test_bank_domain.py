@@ -96,9 +96,9 @@ def test_bank_account_trigger_overdraft(bank_account_aggregate):
 
 def test_bank_account_update_owner(bank_account_aggregate, child_aggregate):
     bank_account_aggregate.update_owner(child_aggregate=child_aggregate)
-    assert bank_account_aggregate.owner == child_aggregate.id
+    assert bank_account_aggregate.owner_id == child_aggregate.id
 
 
 def test_bank_account_update_admin(bank_account_aggregate, adult_aggregate):
     bank_account_aggregate.update_admin(adult_aggregate=adult_aggregate)
-    assert bank_account_aggregate.admin == adult_aggregate.id
+    assert bank_account_aggregate.admin_id == adult_aggregate.id

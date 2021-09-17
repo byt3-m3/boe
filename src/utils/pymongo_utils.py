@@ -1,4 +1,5 @@
 from typing import Union, List
+from uuid import UUID
 
 from bson import ObjectId
 from bson.codec_options import CodecOptions, UuidRepresentation
@@ -8,11 +9,11 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.database import Database
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, BulkWriteError
 from pymongo.results import DeleteResult, UpdateResult, InsertOneResult, InsertManyResult
 from src.utils.core_utils import clone_item
 from src.utils.paging_utils import Paginator, NewPage, PaginationPage
-from uuid import UUID
+
 DEFAULT_ITEM_KEY = "_id"
 
 codec_options = CodecOptions(
@@ -31,7 +32,7 @@ def make_objectid() -> ObjectId:
 
 
 def get_client(db_host, db_port=27017) -> MongoClient:
-    return MongoClient(host=db_host, port=db_port,  uuidRepresentation="standard")
+    return MongoClient(host=db_host, port=db_port, uuidRepresentation="standard")
 
 
 def get_database(client: MongoClient, db_name: str) -> Database:
@@ -67,7 +68,7 @@ def add_item(collection: Collection, item: dict, key_id='_id') -> InsertOneResul
         if not key_id == '_id':
             item['_id'] = item[key_id]
 
-        print("ITEM",item)
+        print("ITEM", item)
         return collection.insert_one(document=item)
 
     except DuplicateKeyError:
@@ -83,12 +84,15 @@ def delete_item(collection: Collection, item_id: Union[str, int], item_key=DEFAU
     )
 
 
-def get_item(collection: Collection, item_id: Union[str, int], item_key=DEFAULT_ITEM_KEY) -> Cursor:
-    return collection.find(
+def get_item(collection: Collection, item_id: Union[str, int, UUID], item_key=DEFAULT_ITEM_KEY) -> Cursor:
+    results = collection.find(
         {
-            f"{item_key}": UUID(str(item_id))
+            f"{item_key}": item_id
         }
     )
+
+
+    return results
 
 
 def get_page_from_collection(collection: Collection, query: dict, limit, last_item_id=None) -> NewPage:
@@ -146,10 +150,19 @@ def _get_cursor_count(cursor):
 
 
 def add_many_items(collection: Collection, items: List[dict], ordered: bool = True) -> InsertManyResult:
-    return collection.insert_many(
-        documents=items,
-        ordered=ordered
-    )
+    for item in items:
+        item['_id'] = item['originator_id']
+
+    try:
+
+        return collection.insert_many(
+            documents=items,
+            ordered=ordered
+        )
+
+    except BulkWriteError:
+        for item in items:
+            update_item(collection=collection, item_id=item['_id'], item_key='_id', new_values=item)
 
 
 def check_for_items(collection: Collection):

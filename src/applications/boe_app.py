@@ -1,6 +1,6 @@
 from typing import List, Dict
 from uuid import UUID
-
+import pymongo.errors
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder, InfrastructureFactory
 from src.const import IN_PRODUCTION
@@ -33,7 +33,7 @@ from src.transcoders import (
     RoleAggregateTranscoding,
     TransactionMethodEnumTranscoding
 )
-from src.utils.aggregate_utils import verify_role_permissions
+from src.utils.aggregate_utils import verify_role_permissions, extract_type
 
 query_table_dao = QueryTableDAO(db_host="192.168.1.5", db_port=27017, db_name="BOE")
 
@@ -44,6 +44,21 @@ class BOEApplication(Application):
     #     super().__init__()
 
     # self.events.recorder = MongoRecorder(db_host='192.168.1.5', db_port=27017)
+
+    @staticmethod
+    def save_aggregate_to_query_table(aggregate, **kwargs):
+
+        try:
+            query_table_dao.add_aggregate(
+                _id=aggregate.id,
+                _type=extract_type(aggregate),
+                **kwargs
+            )
+
+            return True
+
+        except pymongo.errors.DuplicateKeyError:
+            print("Unable to update QueryTable, ")
 
     def construct_factory(self) -> InfrastructureFactory:
         if IN_PRODUCTION:
@@ -98,10 +113,7 @@ class BOEApplication(Application):
             beggining_balance: float = 0,
             overdraft_protection: bool = False
     ) -> Dict[str, UUID]:
-        admin_role = RoleAggregate(
-            name="AdminRole",
-            permissions=[PermissionsEnum.ADMIN]
-        )
+
 
         owner_role = RoleAggregate(
             name='AccountOwnerRole',
@@ -118,21 +130,19 @@ class BOEApplication(Application):
             roles=[owner_role.id]
         )
 
-        admin = AdultAggregate(
+        admin_id = self.create_new_parent(
             first_name=admin_first_name,
             last_name=admin_last_name,
             email=admin_email,
-            roles=[admin_role.id]
         )
 
         account = BankAccount.create(
             balance=beggining_balance,
             owner_id=account_owner.id,
-            admin_id=admin.id,
+            admin_id=admin_id,
             overdraft_protection=overdraft_protection
         )
-        print(account.id)
-        print(BankAccount.create_id(owner_id=account_owner.id))
+        self.save_aggregate_to_query_table(aggregate=)
         self.save(admin_role, admin, owner_role, account, account_owner)
         return {
             "admin_role_id": admin_role.id,
@@ -142,30 +152,25 @@ class BOEApplication(Application):
             "account_owner_id": account_owner.id,
         }
 
-    def create_new_parent(self, first_name, last_name, email, role_name, permissions) -> Dict[str, UUID]:
-        parent_role = RoleAggregate(
-            name=role_name,
-            permissions=permissions
-        )
-        adult_account = AdultAggregate(
+    def create_new_parent(self, first_name, last_name, email) -> UUID:
+
+        adult_account = AdultAggregate.create(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            roles=[parent_role.id]
-
+            roles=[]
         )
-        self.save(adult_account, parent_role)
-        query_table_dao.add_account(
-            _id=adult_account.id,
+
+        self.save_aggregate_to_query_table(
+            aggregate=adult_account,
             first_name=adult_account.first_name,
             last_name=adult_account.last_name,
             email=adult_account.email
         )
 
-        return {
-            "parent_role_id": parent_role.id,
-            "parent_account_id": adult_account.id
-        }
+        self.save(adult_account, parent_role)
+
+    def create_new_child(self, ):
 
     def create_task(self, name, description, due_date) -> UUID:
         task = TaskAggregate(

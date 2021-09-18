@@ -63,6 +63,14 @@ def verify_aggregate_permissions(aggergate: TAggregate, expected_permissions: Li
         return False
 
 
+def extract_type(aggregate: TAggregate):
+    type_string = str(type(aggregate))
+    type_string = type_string[6:]
+    type_string = type_string.replace("'", "")
+    type_string = type_string.replace(">", "").strip()
+    return type_string
+
+
 class MongoRecorder(ApplicationRecorder):
 
     def __init__(self, db_host, db_port):

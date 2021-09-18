@@ -32,7 +32,8 @@ def make_objectid() -> ObjectId:
 
 
 def get_client(db_host, db_port=27017) -> MongoClient:
-    return MongoClient(host=db_host, port=db_port, uuidRepresentation="standard")
+    # return MongoClient(host=db_host, port=db_port, uuidRepresentation="standard")
+    return MongoClient(host=db_host, port=db_port)
 
 
 def get_database(client: MongoClient, db_name: str) -> Database:
@@ -68,7 +69,6 @@ def add_item(collection: Collection, item: dict, key_id='_id') -> InsertOneResul
         if not key_id == '_id':
             item['_id'] = item[key_id]
 
-        print("ITEM", item)
         return collection.insert_one(document=item)
 
     except DuplicateKeyError:
@@ -90,7 +90,6 @@ def get_item(collection: Collection, item_id: Union[str, int, UUID], item_key=DE
             f"{item_key}": item_id
         }
     )
-
 
     return results
 

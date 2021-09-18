@@ -45,10 +45,18 @@ class UserAccountAggregate(CoreAggregate):
     roles: List[UUID]
 
     @classmethod
-    def create(cls, first_name, last_name, email):
+    def create(cls, first_name, last_name, email, roles):
+        _id = make_id(
+            domain="users",
+            key=f"{email}"
+        )
         return cls._create(
             event_class=cls.Created,
-            id=make_id(domain="users", key=f"{first_name}")
+            id=_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            roles=roles
         )
 
     @event("UpdateFirstName")

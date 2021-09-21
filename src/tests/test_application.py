@@ -22,7 +22,7 @@ def boe_application():
 @fixture
 def boe_appication_w_account():
     app = BOEApplication()
-    app.create_new_account(
+    app.create_account(
         owner_first_name="t",
         owner_last_name='test',
         role_name='TestRole',
@@ -36,7 +36,7 @@ def boe_appication_w_account():
 
 
 def test_boe_application_create_new_accout(boe_application):
-    result_mapping = boe_application.create_new_account(
+    result_mapping = boe_application.create_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',
@@ -52,7 +52,7 @@ def test_boe_application_create_new_accout(boe_application):
 
 
 def test_boe_app_create_new_parent(boe_application):
-    result_mapping = boe_application.create_new_parent(
+    result_mapping = boe_application.create_parent(
         first_name='test',
         last_name='test',
         email='test@gmail.com',
@@ -76,7 +76,7 @@ def test_boe_app_create_task(boe_application, test_name, test_description, test_
 
 
 def test_app_change_account_balance(boe_application):
-    result_mapping = boe_application.create_new_account(
+    result_mapping = boe_application.create_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',
@@ -99,7 +99,7 @@ def test_app_change_account_balance(boe_application):
 
 
 def test_app_change_account_status(boe_application):
-    result_mapping = boe_application.create_new_account(
+    result_mapping = boe_application.create_account(
         owner_first_name="t",
         owner_last_name='test',
         owner_email='test.com',

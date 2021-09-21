@@ -18,6 +18,14 @@ class BankAccount(CoreAggregate):
     is_overdrafted: bool = False
     overdraft_protection: bool = False
 
+    def serialize(self):
+        return {
+            "balance": self.balance,
+            "status": self.status.value,
+            "is_overdrafted": self.is_overdrafted,
+            "overdraft_protection": self.overdraft_protection,
+        }
+
     @classmethod
     def create(cls, balance: float, owner_id: UUID, admin_id: UUID, overdraft_protection: bool):
         return cls._create(

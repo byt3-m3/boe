@@ -12,10 +12,42 @@ from src.enums import (
 from src.utils.core_utils import make_id
 
 
+@dataclass(frozen=True)
+class ChildReadModel:
+    fist_name: str
+    last_name: str
+    email: str
+
+
 @dataclass
 class RoleAggregate(Aggregate):
     name: str
     permissions: List[PermissionsEnum]
+
+    def serialize(self) -> dict:
+        return {
+            "name": self.name,
+            "permissions": [permission.value for permission in self.permissions]
+        }
+
+    @classmethod
+    def deserialize(cls, data):
+        return {
+            "name": data.get("name"),
+            "permissions": [PermissionsEnum(permission) for permission in data.get("permissions")]
+        }
+
+    @classmethod
+    def create(cls, name, permissions):
+        if not permissions:
+            permissions = []
+
+        return cls._create(
+            event_class=cls.Created,
+            id=make_id(domain="users", key=f'{name}'),
+            name=name,
+            permissions=permissions
+        )
 
     @event("AppendPermission")
     def append_permission(self, permission: PermissionsEnum):
@@ -43,9 +75,19 @@ class UserAccountAggregate(CoreAggregate):
     last_name: str
     email: str
     roles: List[UUID]
+    account_id: UUID
+
+    def serialize(self) -> dict:
+        return {
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "roles": self.roles,
+            "account_id": self.account_id,
+        }
 
     @classmethod
-    def create(cls, first_name, last_name, email, roles):
+    def create(cls, first_name, last_name, email, roles) -> 'UserAccountAggregate':
         _id = make_id(
             domain="users",
             key=f"{email}"
@@ -56,24 +98,18 @@ class UserAccountAggregate(CoreAggregate):
             first_name=first_name,
             last_name=last_name,
             email=email,
-            roles=roles
+            roles=roles,
+            account_id=None
+
         )
 
-    @event("UpdateFirstName")
-    def update_first_name(self, value):
-        self.first_name = value
-
-    @event("UpdateLastName")
-    def update_last_name(self, value):
-        self.last_name = value
-
-    @event("UpdateEmail")
-    def update_email(self, value):
-        self.email = value
+    @event("SetAccountID")
+    def set_account_id(self, account_id: UUID):
+        self.account_id = account_id
 
     @event("AddRoleEvent")
-    def add_role(self, role: "RoleAggregate"):
-        self.roles.append(role.id)
+    def add_role(self, role_id: UUID):
+        self.roles.append(role_id)
 
     @event("RemoveRoleEvent")
     def remove_role(self, role: "RoleAggregate"):
@@ -86,16 +122,36 @@ class ChildAggregate(UserAccountAggregate):
     age: int
     grade: int
 
-    @event("UpdateGender")
-    def update_gender(self, value: GenderEnum):
-        if isinstance(value, GenderEnum):
-            self.gender = value
-        else:
-            raise TypeError(f"Must be of type: {GenderEnum}")
+    def serialize(self) -> dict:
+        return {
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "roles": self.roles,
+            "account_id": self.account_id,
+            "gender": self.gender.value,
+            "age": self.age,
+            "grade": self.grade
+        }
 
-    @event("UpdateAge")
-    def update_age(self, value: int):
-        self.age = value
+    @classmethod
+    def create(cls, first_name, last_name, email, gender, age, grade):
+        _id = make_id(
+            domain="users",
+            key=f"{email}"
+        )
+        return cls._create(
+            account_id=None,
+            event_class=cls.Created,
+            id=_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            gender=gender,
+            age=age,
+            grade=grade,
+            roles=[]
+        )
 
     @event("UpdateGrade")
     def update_grade(self, value: int):
@@ -107,7 +163,7 @@ class ChildAggregate(UserAccountAggregate):
 
 @dataclass
 class AdultAggregate(UserAccountAggregate):
-    roles: List[UUID]
+    pass
 
 
 @dataclass

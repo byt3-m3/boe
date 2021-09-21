@@ -11,21 +11,23 @@ class AccountOverdraftCheckPolicy(Policy):
             bank_accout: BankAccount,
             new_amount: float,
             roles: List[RoleAggregate],
-            expected_permissions: List[PermissionsEnum]
+            expected_permissions: List[PermissionsEnum],
+            method: TransactionMethodEnum
     ):
         self.bank_account = bank_accout
         self.new_amount = new_amount
         self.roles = roles
         self.expected_permissions = expected_permissions
+        self.method = method
 
     def evaluate(self) -> bool:
         future_balance = 0
         if verify_role_permissions(expected_permissions=self.expected_permissions, roles=self.roles):
-            if method == TransactionMethodEnum.ADD:
+            if self.method == TransactionMethodEnum.ADD:
                 future_balance = self.bank_account.balance + self.new_amount
 
-            if method == TransactionMethodEnum.SUBTRACT:
-                future_balance = self.bank_account.balancebalance - self.new_amount
+            if self.method == TransactionMethodEnum.SUBTRACT:
+                future_balance = self.bank_account.balance - self.new_amount
 
             if future_balance < 0:
                 return True

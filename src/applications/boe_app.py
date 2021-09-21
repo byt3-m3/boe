@@ -1,5 +1,7 @@
-from typing import List, Dict
+from dataclasses import asdict, is_dataclass
+from typing import List
 from uuid import UUID
+
 import pymongo.errors
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder, InfrastructureFactory
@@ -45,20 +47,31 @@ class BOEApplication(Application):
 
     # self.events.recorder = MongoRecorder(db_host='192.168.1.5', db_port=27017)
 
+    def setup(self):
+        admin_role_id = self.create_role(name='AdminRole', permissions=[PermissionsEnum.ADMIN])
+        child_role_id = self.create_role(name='ChildRole', permissions=[PermissionsEnum.Child])
+        return admin_role_id, child_role_id
+
     @staticmethod
     def save_aggregate_to_query_table(aggregate, **kwargs):
+        if is_dataclass(aggregate):
 
-        try:
-            query_table_dao.add_aggregate(
-                _id=aggregate.id,
-                _type=extract_type(aggregate),
-                **kwargs
-            )
+            try:
+                query_table_dao.add_aggregate(
+                    _type=extract_type(aggregate),
+                    _id=aggregate.id,
+                    **aggregate.serialize()
+                )
 
-            return True
+                return True
 
-        except pymongo.errors.DuplicateKeyError:
-            print("Unable to update QueryTable, ")
+            except pymongo.errors.DuplicateKeyError:
+
+                query_table_dao.update_aggregate(
+                    _type=extract_type(aggregate),
+                    _id=aggregate.id,
+                    **aggregate.serialize()
+                )
 
     def construct_factory(self) -> InfrastructureFactory:
         if IN_PRODUCTION:
@@ -74,7 +87,7 @@ class BOEApplication(Application):
         ]
         return True
 
-    def _get_aggregate(self, aggregate_id: UUID):
+    def _get_aggregate(self, aggregate_id: UUID, version=None):
         return self.repository.get(aggregate_id)
 
     def _get_roles_from_account_aggregate(self, account_admin: UserAccountAggregate):
@@ -91,68 +104,48 @@ class BOEApplication(Application):
         transcoder.register(TransactionMethodEnumTranscoding())
 
     def create_role(self, name: str, permissions: List[PermissionsEnum]) -> UUID:
-        role = RoleAggregate(
+        role = RoleAggregate.create(
             name=name,
             permissions=permissions
         )
-
+        self.save_aggregate_to_query_table(aggregate=role, **asdict(role))
         self.save(role)
         return role.id
 
-    def create_new_account(
+    def append_permisson_to_role(self, role_id: UUID, permission: PermissionsEnum):
+        role: RoleAggregate = self.repository.get(aggregate_id=role_id)
+        role.append_permission(permission=permission)
+        self.save_aggregate_to_query_table(aggregate=role)
+        self.save(role)
+
+    def create_account(
             self,
-            owner_first_name: str,
-            owner_last_name: str,
-            owner_email: str,
-            owner_age: int,
-            owner_grade: int,
-            admin_first_name: str,
-            admin_last_name: str,
-            admin_email: str,
-            owner_gender: GenderEnum,
+            owner_id: UUID,
+            adimin_id: UUID,
             beggining_balance: float = 0,
             overdraft_protection: bool = False
-    ) -> Dict[str, UUID]:
-
-
-        owner_role = RoleAggregate(
-            name='AccountOwnerRole',
-            permissions=[PermissionsEnum.AccountOwner]
-        )
-
-        account_owner = ChildAggregate(
-            first_name=owner_first_name,
-            last_name=owner_last_name,
-            email=owner_email,
-            grade=owner_grade,
-            age=owner_age,
-            gender=owner_gender,
-            roles=[owner_role.id]
-        )
-
-        admin_id = self.create_new_parent(
-            first_name=admin_first_name,
-            last_name=admin_last_name,
-            email=admin_email,
-        )
+    ) -> UUID:
 
         account = BankAccount.create(
             balance=beggining_balance,
-            owner_id=account_owner.id,
-            admin_id=admin_id,
+            owner_id=owner_id,
+            admin_id=adimin_id,
             overdraft_protection=overdraft_protection
         )
-        self.save_aggregate_to_query_table(aggregate=)
-        self.save(admin_role, admin, owner_role, account, account_owner)
-        return {
-            "admin_role_id": admin_role.id,
-            "admin_id": admin.id,
-            "owner_role_id": owner_role.id,
-            "account_id": account.id,
-            "account_owner_id": account_owner.id,
-        }
+        account_owner = self.repository.get(aggregate_id=owner_id)
+        account_admin = self.repository.get(aggregate_id=adimin_id)
 
-    def create_new_parent(self, first_name, last_name, email) -> UUID:
+        account_owner.set_account_id(account.id)
+        account_admin.set_account_id(account.id)
+
+        self.save_aggregate_to_query_table(account_owner)
+        self.save_aggregate_to_query_table(account_admin)
+        self.save_aggregate_to_query_table(account)
+
+        self.save(account, account_owner, account_admin)
+        return account.id
+
+    def create_parent(self, first_name: str, last_name: str, email: str) -> UUID:
 
         adult_account = AdultAggregate.create(
             first_name=first_name,
@@ -162,27 +155,56 @@ class BOEApplication(Application):
         )
 
         self.save_aggregate_to_query_table(
+            _id=adult_account.id,
             aggregate=adult_account,
-            first_name=adult_account.first_name,
-            last_name=adult_account.last_name,
-            email=adult_account.email
+            **asdict(adult_account)
         )
 
-        self.save(adult_account, parent_role)
+        self.save(adult_account)
+        return adult_account.id
 
-    def create_new_child(self, ):
+    def create_child(self, first_name: str, last_name: str, email: str, gender: GenderEnum, age: int, grade: int):
+        child = ChildAggregate.create(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            gender=gender,
+            age=age,
+            grade=grade
+        )
 
-    def create_task(self, name, description, due_date) -> UUID:
+        self.save_aggregate_to_query_table(
+            aggregate=child,
+            _id=child.id,
+            **asdict(child)
+        )
+
+        self.save(child)
+        return child.id
+
+    def get_children():
+
+        query_table_dao.scan_child_aggregates()
+
+    def create_task(self, name, description, due_date, value) -> UUID:
         task = TaskAggregate(
             name=name,
             description=description,
             due_date=due_date,
+            value=value,
             attachments=[],
             items=[],
             assignee=''
         )
+        self.save_aggregate_to_query_table(aggregate=task)
         self.save(task)
         return task.id
+
+    def append_role_to_account(self, account_id: UUID, role_id: UUID):
+        _account: UserAccountAggregate = self.repository.get(account_id)
+        _account.add_role(role_id=role_id)
+        self.save_aggregate_to_query_table(aggregate=_account)
+        self.save(_account)
 
     def scan_aggregates(self):
         ids = self._list_originator_ids()
@@ -201,9 +223,16 @@ class BOEApplication(Application):
         #
         role_aggreates = [self.repository.get(_id) for _id in account_admin.roles]
         #
-        if AccountOverdraftCheckPolicy(bank_accout=account, new_amount=val, roles=role_aggreates).evaluate():
-            account.change_balance(method=transaction_method, value=val)
-            self.save(account)
+        # if not AccountOverdraftCheckPolicy(
+        #         bank_accout=account,
+        #         new_amount=val,
+        #         roles=role_aggreates,
+        #         expected_permissions=[PermissionsEnum.ADMIN, PermissionsEnum.AccountChangeBalance],
+        #         method=transaction_method
+        # ).evaluate():
+        account.change_balance(method=transaction_method, value=val)
+        self.save_aggregate_to_query_table(account)
+        self.save(account)
 
     def change_account_status(self, account_id: UUID, status: int) -> UUID:
         status = AccountStatusEnum(status)
@@ -223,8 +252,8 @@ class BOEApplication(Application):
             self.save(account)
             return account.id
 
-    def get_account(self, account_id: UUID) -> BankAccount:
-        return self._get_aggregate(account_id)
+    def get_account(self, account_id: UUID, version=None) -> BankAccount:
+        return self._get_aggregate(account_id, version=version)
 
     def get_account_admin(self, admin_id: UUID) -> AdultAggregate:
         return self._get_aggregate(admin_id)

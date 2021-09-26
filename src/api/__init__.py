@@ -168,5 +168,11 @@ def create_task():
         )
 
 
+@app.route("/api/v1/task/<task_id>/validate")
+def validate_task(task_id):
+    boe_app.validate_task(task_id=UUID(task_id))
+    return Response(status=200, headers=headers, response={})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

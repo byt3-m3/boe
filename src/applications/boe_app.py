@@ -48,28 +48,35 @@ class BOEApplication(Application):
         return admin_role_id, child_role_id
 
     @staticmethod
-    def save_aggregate_to_query_table(aggregate, table_id, **kwargs):
+    def save_aggregate_to_query_table(aggregate, table_id, **kwargs) -> bool:
         if is_dataclass(aggregate):
 
             try:
-                query_table_dao.add_aggregate(
+                insert_result = query_table_dao.add_aggregate(
                     _type=extract_type(aggregate),
                     _version=aggregate.version,
                     _id=aggregate.id,
                     collection=table_id,
                     **aggregate.serialize()
                 )
+                if insert_result.acknowledged:
+                    return True
 
-                return True
+                else:
+                    return False
 
             except pymongo.errors.DuplicateKeyError:
-                query_table_dao.update_aggregate(
+                update_result = query_table_dao.update_aggregate(
                     _type=extract_type(aggregate),
                     _version=aggregate.version,
                     _id=aggregate.id,
                     collection=table_id,
                     **aggregate.serialize()
                 )
+                if update_result.modified_count >= 1:
+                    return True
+                else:
+                    return False
 
     def construct_factory(self) -> InfrastructureFactory:
         if IN_PRODUCTION:

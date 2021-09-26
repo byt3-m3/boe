@@ -29,6 +29,15 @@ from src.enums import (
     AccountStatusEnum,
     TransactionMethodEnum
 )
+from src.env import (
+    MONGO_HOST,
+    MONGO_PORT,
+    MONGO_QUERY_DB,
+    ADULT_QUERY_TABLE,
+    CHILD_QUERY_TABLE,
+    TASK_QUERY_TABLE,
+    ACCOUNT_QUERY_TABLE
+)
 from src.transcoders import (
     PermissionsEnumTranscoding,
     AccountStatusEnumTranscoding,
@@ -38,7 +47,7 @@ from src.transcoders import (
 )
 from src.utils.aggregate_utils import verify_role_permissions, extract_type
 
-query_table_dao = QueryTableDAO(db_host="192.168.1.5", db_port=27017, db_name="BOE")
+query_table_dao = QueryTableDAO(db_host=MONGO_HOST, db_port=MONGO_PORT, db_name=MONGO_QUERY_DB)
 
 
 class BOEApplication(Application):
@@ -49,7 +58,7 @@ class BOEApplication(Application):
         return admin_role_id, child_role_id
 
     @staticmethod
-    def save_aggregate_to_query_table(aggregate, table_id, **kwargs) -> bool:
+    def save_aggregate_to_query_table(aggregate, table_id=None, **kwargs) -> bool:
         if is_dataclass(aggregate):
 
             try:
@@ -165,7 +174,6 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(
             _id=adult_account.id,
             aggregate=adult_account,
-            table_id='adult_table',
             **asdict(adult_account)
         )
 
@@ -194,7 +202,6 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(
             aggregate=child,
             _id=child.id,
-            table_id='child_table',
             **asdict(child)
         )
 
@@ -215,14 +222,14 @@ class BOEApplication(Application):
             items=[],
             assignee=assignee
         )
-        self.save_aggregate_to_query_table(aggregate=task, table_id='task_table')
+        self.save_aggregate_to_query_table(aggregate=task)
         self.save(task)
         return task.id
 
     def validate_task(self, task_id: UUID) -> TaskAggregate:
         task: TaskAggregate = self.repository.get(task_id)
         task.set_validated()
-        self.save_aggregate_to_query_table(task, table_id='task_table')
+        self.save_aggregate_to_query_table(task)
         self.save(task)
         return task
 
@@ -239,8 +246,8 @@ class BOEApplication(Application):
         else:
             raise AssertionError("Task Has not been validate")
 
-        self.save_aggregate_to_query_table(task, table_id='task_table')
-        self.save_aggregate_to_query_table(account, table_id='account_table')
+        self.save_aggregate_to_query_table(task)
+        self.save_aggregate_to_query_table(account)
         self.save(account, task)
         return task
 
@@ -257,7 +264,7 @@ class BOEApplication(Application):
         child_aggregate.add_task_id(task_id)
 
         self.save(child_aggregate)
-        self.save_aggregate_to_query_table(aggregate=child_aggregate, table_id='child_table')
+        self.save_aggregate_to_query_table(aggregate=child_aggregate)
         return task_id
 
     def append_role_to_account(self, account_id: UUID, role_id: UUID) -> BankAccount:
@@ -273,7 +280,7 @@ class BOEApplication(Application):
         account: BankAccount = self.repository.get(aggregate_id=account_id)
 
         account.change_balance(method=transaction_method, value=val)
-        self.save_aggregate_to_query_table(account, table_id='account_table')
+        self.save_aggregate_to_query_table(account)
         self.save(account)
         return account
 

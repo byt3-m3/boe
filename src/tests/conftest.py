@@ -1,3 +1,5 @@
+import os
+
 from pytest import fixture
 from src.domains.user_domain import (
     RoleAggregate,
@@ -14,6 +16,15 @@ from tests.const import (
     TEST_DESCRIPTION,
     TEST_BYTE_DATA
 )
+
+
+# @fixture(autouse=True)
+# def set_env():
+#     INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory";
+#     SQLITE_DBNAME = "_db/test_event_db"
+#
+#     os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
+#     os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 
 @fixture

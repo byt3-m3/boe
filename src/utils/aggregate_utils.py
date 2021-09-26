@@ -3,8 +3,9 @@ from typing import List, Any, Optional
 from uuid import UUID
 
 from eventsourcing.domain import TAggregate
-from eventsourcing.persistence import AggregateRecorder, StoredEvent
+from eventsourcing.persistence import AggregateRecorder, StoredEvent, ApplicationRecorder, Notification
 from src.enums import PermissionsEnum
+from src.domains.user_domain import RoleAggregate
 from src.utils.pymongo_utils import (
     add_many_items,
     get_client,
@@ -13,6 +14,22 @@ from src.utils.pymongo_utils import (
     get_item,
     scan_items
 )
+
+
+def verify_role_permissions(roles: List[RoleAggregate], expected_permissions: List[PermissionsEnum]) -> bool:
+    def filter_permissions(permission):
+        for _role in roles:
+            for p in _role.permissions:
+                if p == permission:
+                    return True
+                else:
+                    return False
+
+    filtered_permissions = list(filter(filter_permissions, expected_permissions))
+    if len(filtered_permissions) > 0:
+        return True
+    else:
+        return False
 
 
 def verify_aggregate_permission(aggergate: TAggregate, expected_permission: PermissionsEnum) -> bool:
@@ -46,7 +63,15 @@ def verify_aggregate_permissions(aggergate: TAggregate, expected_permissions: Li
         return False
 
 
-class MongoRecorder(AggregateRecorder):
+def extract_type(aggregate: TAggregate):
+    type_string = str(type(aggregate))
+    type_string = type_string[6:]
+    type_string = type_string.replace("'", "")
+    type_string = type_string.replace(">", "").strip()
+    return type_string
+
+
+class MongoRecorder(ApplicationRecorder):
 
     def __init__(self, db_host, db_port):
         self._client = get_client(db_host=db_host, db_port=db_port)
@@ -94,3 +119,9 @@ class MongoRecorder(AggregateRecorder):
                 state=record['state']
             ) for record in cursor
         ]
+
+    def select_notifications(self, start: int, limit: int) -> List[Notification]:
+        pass
+
+    def max_notification_id(self) -> int:
+        pass

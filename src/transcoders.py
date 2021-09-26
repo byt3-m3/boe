@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 from eventsourcing.persistence import Transcoding
 from src.domains.user_domain import RoleAggregate
-from src.enums import GenderEnum, AccountStatusEnum, PermissionsEnum
+from src.enums import GenderEnum, AccountStatusEnum, PermissionsEnum, TransactionMethodEnum
 import json
 
 
@@ -26,6 +26,16 @@ class GenderEnumTranscoding(Transcoding):
 
     def decode(self, d: int):
         return GenderEnum(d)
+
+class TransactionMethodEnumTranscoding(Transcoding):
+    type = TransactionMethodEnum
+    name = "transaction_method"
+
+    def encode(self, o: TransactionMethodEnum) -> int:
+        return o.value
+
+    def decode(self, d: int):
+        return TransactionMethodEnum(d)
 
 
 class AccountStatusEnumTranscoding(Transcoding):

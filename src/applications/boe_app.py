@@ -207,6 +207,12 @@ class BOEApplication(Application):
         self.save(task)
         return task.id
 
+    def validate_task(self, task_id: UUID):
+        task: TaskAggregate = self.repository.get(task_id)
+        task.set_validated()
+        self.save_aggregate_to_query_table(task, table_id='task_table')
+        self.save(task)
+
     def create_and_assign_task(self, child_id: UUID, name, description, due_date, value):
         child_aggregate: ChildAggregate = self.repository.get(child_id)
         task_id = self.create_task(

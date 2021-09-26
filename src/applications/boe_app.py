@@ -68,7 +68,6 @@ class BOEApplication(Application):
                 return True
 
             except pymongo.errors.DuplicateKeyError:
-                print(table_id)
                 query_table_dao.update_aggregate(
                     _type=extract_type(aggregate),
                     _version=aggregate.version,

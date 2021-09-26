@@ -62,6 +62,16 @@ class TaskAggregate(Aggregate):
                 self.is_complete = True
 
     @event
+    def set_validated(self):
+        if not self.is_validated:
+            self.is_validated = True
+
+    @event
+    def invalidate(self):
+        if self.is_validated:
+            self.is_validated = False
+
+    @event
     def update_assign_date(self):
         self.assign_date = datetime.datetime.now()
 

@@ -219,13 +219,14 @@ class BOEApplication(Application):
         self.save(task)
         return task.id
 
-    def validate_task(self, task_id: UUID):
+    def validate_task(self, task_id: UUID) -> TaskAggregate:
         task: TaskAggregate = self.repository.get(task_id)
         task.set_validated()
         self.save_aggregate_to_query_table(task, table_id='task_table')
         self.save(task)
+        return task
 
-    def mark_task_complete(self, task_id: UUID):
+    def mark_task_complete(self, task_id: UUID) -> TaskAggregate:
         task: TaskAggregate = self.repository.get(task_id)
         task_assignee: ChildAggregate = self.repository.get(task.assignee)
         account: BankAccount = self.repository.get(task_assignee.related_account_id)
@@ -241,8 +242,9 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(task, table_id='task_table')
         self.save_aggregate_to_query_table(account, table_id='account_table')
         self.save(account, task)
+        return task
 
-    def create_and_assign_task(self, child_id: UUID, name, description, due_date, value):
+    def create_and_assign_task(self, child_id: UUID, name, description, due_date, value) -> UUID:
         child_aggregate: ChildAggregate = self.repository.get(child_id)
         task_id = self.create_task(
             name=name,
@@ -258,19 +260,14 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(aggregate=child_aggregate, table_id='child_table')
         return task_id
 
-    def append_role_to_account(self, account_id: UUID, role_id: UUID):
+    def append_role_to_account(self, account_id: UUID, role_id: UUID) -> BankAccount:
         _account: UserAccountAggregate = self.repository.get(account_id)
         _account.add_role(role_id=role_id)
         self.save_aggregate_to_query_table(aggregate=_account)
         self.save(_account)
+        return _account
 
-    def scan_aggregates(self):
-        ids = self._list_originator_ids()
-        return [
-            self.repository.get(aggregate_id=_id) for _id in ids
-        ]
-
-    def change_account_balance(self, account_id: UUID, val: float, transaction_method: str):
+    def change_account_balance(self, account_id: UUID, val: float, transaction_method: str) -> BankAccount:
         transaction_method = TransactionMethodEnum(transaction_method)
 
         account: BankAccount = self.repository.get(aggregate_id=account_id)
@@ -278,9 +275,9 @@ class BOEApplication(Application):
         account.change_balance(method=transaction_method, value=val)
         self.save_aggregate_to_query_table(account, table_id='account_table')
         self.save(account)
-        return account.id
+        return account
 
-    def change_account_status(self, account_id: UUID, status: int) -> UUID:
+    def change_account_status(self, account_id: UUID, status: int) -> BankAccount:
         status = AccountStatusEnum(status)
         account = self.get_account(account_id=account_id)
         account_admin = self.get_account_admin(admin_id=account.admin_id)
@@ -296,7 +293,7 @@ class BOEApplication(Application):
         ):
             account.change_status(status=AccountStatusEnum.INACTIVE)
             self.save(account)
-            return account.id
+            return account
 
     def get_account(self, account_id: UUID, version=None) -> BankAccount:
         return self._get_aggregate(account_id, version=version)

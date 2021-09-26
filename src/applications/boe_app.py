@@ -123,6 +123,7 @@ class BOEApplication(Application):
         role.append_permission(permission=permission)
         self.save_aggregate_to_query_table(aggregate=role)
         self.save(role)
+        return role.serialize()
 
     def create_account(
             self,

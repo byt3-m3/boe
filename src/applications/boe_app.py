@@ -260,7 +260,6 @@ class BOEApplication(Application):
         transaction_method = TransactionMethodEnum(transaction_method)
 
         account: BankAccount = self.repository.get(aggregate_id=account_id)
-        account_admin: AdultAggregate = self.repository.get(aggregate_id=account.admin_id)
 
         account.change_balance(method=transaction_method, value=val)
         self.save_aggregate_to_query_table(account, table_id='account_table')

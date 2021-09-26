@@ -42,11 +42,6 @@ query_table_dao = QueryTableDAO(db_host="192.168.1.5", db_port=27017, db_name="B
 
 class BOEApplication(Application):
 
-    # def __init__(self):
-    #     super().__init__()
-
-    # self.events.recorder = MongoRecorder(db_host='192.168.1.5', db_port=27017)
-
     def setup(self):
         admin_role_id = self.create_role(name='AdminRole', permissions=[PermissionsEnum.ADMIN])
         child_role_id = self.create_role(name='ChildRole', permissions=[PermissionsEnum.Child])

@@ -37,7 +37,9 @@ class TaskAggregate(Aggregate):
             "attachments": self.attachments,
             "items": self.items,
             "is_complete": self.is_complete,
+            "is_validated": self.is_validated,
             "assignee": self.assignee,
+            "value": self.value,
         }
 
     @event

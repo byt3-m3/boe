@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pymongo.errors
 from eventsourcing.application import Application
+from eventsourcing.domain import TAggregate
 from eventsourcing.persistence import Transcoder, InfrastructureFactory
 from src.const import IN_PRODUCTION
 from src.data_access.query_table_dao import QueryTableDAO
@@ -92,10 +93,10 @@ class BOEApplication(Application):
         ]
         return True
 
-    def _get_aggregate(self, aggregate_id: UUID, version=None):
+    def _get_aggregate(self, aggregate_id: UUID, version=None) -> TAggregate:
         return self.repository.get(aggregate_id)
 
-    def _get_roles_from_account_aggregate(self, account_admin: UserAccountAggregate):
+    def _get_roles_from_account_aggregate(self, account_admin: UserAccountAggregate) -> List[RoleAggregate]:
         role_ids = [role for role in account_admin.roles]
         return [self._get_aggregate(role) for role in role_ids]
 
@@ -117,7 +118,7 @@ class BOEApplication(Application):
         self.save(role)
         return role.id
 
-    def append_permisson_to_role(self, role_id: UUID, permission: PermissionsEnum):
+    def append_permisson_to_role(self, role_id: UUID, permission: PermissionsEnum) -> dict:
         role: RoleAggregate = self.repository.get(aggregate_id=role_id)
         role.append_permission(permission=permission)
         self.save_aggregate_to_query_table(aggregate=role)

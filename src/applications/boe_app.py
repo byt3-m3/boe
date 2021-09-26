@@ -188,6 +188,7 @@ class BOEApplication(Application):
         self.save(child)
         return child.id
 
+    @staticmethod
     def get_children():
         return query_table_dao.scan_child_aggregates()
 

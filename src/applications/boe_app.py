@@ -212,6 +212,19 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(task, table_id='task_table')
         self.save(task)
 
+    def mark_task_complete(self, task_id: UUID):
+        task: TaskAggregate = self.repository.get(task_id)
+        task_assignee: ChildAggregate = self.repository.get(task.assignee)
+        account: BankAccount = self.repository.get(task_assignee.related_account_id)
+
+        task.set_complete()
+        if task.is_validated:
+            account.change_balance(method=TransactionMethodEnum.ADD, value=task.value)
+
+        self.save_aggregate_to_query_table(task, table_id='task_table')
+        self.save_aggregate_to_query_table(account, table_id='account_table')
+        self.save(account, task)
+
     def create_and_assign_task(self, child_id: UUID, name, description, due_date, value):
         child_aggregate: ChildAggregate = self.repository.get(child_id)
         task_id = self.create_task(

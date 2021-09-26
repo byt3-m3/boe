@@ -4,7 +4,7 @@ from uuid import UUID
 
 from eventsourcing.domain import AggregateEvent, event
 from src.domains.core_domain import CoreAggregate
-from src.domains.user_domain import RoleAggregate, ChildAggregate, AdultAggregate
+from src.domains.user_domain import RoleAggregate
 from src.enums import AccountStatusEnum, TransactionMethodEnum, PermissionsEnum
 from src.utils.core_utils import make_id
 
@@ -21,6 +21,8 @@ class BankAccount(CoreAggregate):
     def serialize(self):
         return {
             "balance": self.balance,
+            "owner_id": self.owner_id,
+            "admin_id": self.admin_id,
             "status": self.status.value,
             "is_overdrafted": self.is_overdrafted,
             "overdraft_protection": self.overdraft_protection,
@@ -72,14 +74,6 @@ class BankAccount(CoreAggregate):
             return True
         else:
             return False
-
-    @event("UpdateAdmin")
-    def update_admin(self, adult_aggregate: AdultAggregate):
-        self.admin_id = adult_aggregate.id
-
-    @event("UpdateOwner")
-    def update_owner(self, child_aggregate: ChildAggregate):
-        self.owner_id = child_aggregate.id
 
     @event("ChangeBalance")
     def change_balance(self, method: TransactionMethodEnum, value: float):

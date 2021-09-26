@@ -9,12 +9,15 @@ from src.const import IN_PRODUCTION
 from src.data_access.query_table_dao import QueryTableDAO
 from src.domains.bank_domain import (
     BankAccount,
-    ChildAggregate,
-    RoleAggregate,
-    AdultAggregate
+
 )
 from src.domains.task_domain import (
     TaskAggregate
+)
+from src.domains.user_domain import (
+    ChildAggregate,
+    RoleAggregate,
+    AdultAggregate
 )
 from src.domains.user_domain import (
     UserAccountAggregate
@@ -24,9 +27,6 @@ from src.enums import (
     PermissionsEnum,
     AccountStatusEnum,
     TransactionMethodEnum
-)
-from src.policy.bank_policies import (
-    AccountOverdraftCheckPolicy
 )
 from src.transcoders import (
     PermissionsEnumTranscoding,
@@ -53,23 +53,27 @@ class BOEApplication(Application):
         return admin_role_id, child_role_id
 
     @staticmethod
-    def save_aggregate_to_query_table(aggregate, **kwargs):
+    def save_aggregate_to_query_table(aggregate, table_id, **kwargs):
         if is_dataclass(aggregate):
 
             try:
                 query_table_dao.add_aggregate(
                     _type=extract_type(aggregate),
+                    _version=aggregate.version,
                     _id=aggregate.id,
+                    collection=table_id,
                     **aggregate.serialize()
                 )
 
                 return True
 
             except pymongo.errors.DuplicateKeyError:
-
+                print(table_id)
                 query_table_dao.update_aggregate(
                     _type=extract_type(aggregate),
+                    _version=aggregate.version,
                     _id=aggregate.id,
+                    collection=table_id,
                     **aggregate.serialize()
                 )
 
@@ -132,15 +136,16 @@ class BOEApplication(Application):
             admin_id=adimin_id,
             overdraft_protection=overdraft_protection
         )
-        account_owner = self.repository.get(aggregate_id=owner_id)
-        account_admin = self.repository.get(aggregate_id=adimin_id)
 
-        account_owner.set_account_id(account.id)
-        account_admin.set_account_id(account.id)
+        account_owner: ChildAggregate = self.repository.get(aggregate_id=owner_id)
+        account_admin: AdultAggregate = self.repository.get(aggregate_id=adimin_id)
 
-        self.save_aggregate_to_query_table(account_owner)
-        self.save_aggregate_to_query_table(account_admin)
-        self.save_aggregate_to_query_table(account)
+        account_owner.set_related_account_id(account.id)
+        account_admin.set_related_account_id(account.id)
+
+        self.save_aggregate_to_query_table(account_owner, table_id='child_table')
+        self.save_aggregate_to_query_table(account_admin, table_id='adult_table')
+        self.save_aggregate_to_query_table(account, table_id='account_table')
 
         self.save(account, account_owner, account_admin)
         return account.id
@@ -157,6 +162,7 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(
             _id=adult_account.id,
             aggregate=adult_account,
+            table_id='adult_table',
             **asdict(adult_account)
         )
 
@@ -176,6 +182,7 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(
             aggregate=child,
             _id=child.id,
+            table_id='child_table',
             **asdict(child)
         )
 
@@ -186,7 +193,7 @@ class BOEApplication(Application):
 
         query_table_dao.scan_child_aggregates()
 
-    def create_task(self, name, description, due_date, value) -> UUID:
+    def create_task(self, name, description, due_date, value, assignee) -> UUID:
         task = TaskAggregate(
             name=name,
             description=description,
@@ -194,11 +201,27 @@ class BOEApplication(Application):
             value=value,
             attachments=[],
             items=[],
-            assignee=''
+            assignee=assignee
         )
-        self.save_aggregate_to_query_table(aggregate=task)
+        self.save_aggregate_to_query_table(aggregate=task, table_id='task_table')
         self.save(task)
         return task.id
+
+    def create_and_assign_task(self, child_id: UUID, name, description, due_date, value):
+        child_aggregate: ChildAggregate = self.repository.get(child_id)
+        task_id = self.create_task(
+            name=name,
+            assignee=child_aggregate.id,
+            description=description,
+            due_date=due_date,
+            value=value
+        )
+
+        child_aggregate.add_task_id(task_id)
+
+        self.save(child_aggregate)
+        self.save_aggregate_to_query_table(aggregate=child_aggregate, table_id='child_table')
+        return task_id
 
     def append_role_to_account(self, account_id: UUID, role_id: UUID):
         _account: UserAccountAggregate = self.repository.get(account_id)
@@ -215,24 +238,13 @@ class BOEApplication(Application):
     def change_account_balance(self, account_id: UUID, val: float, transaction_method: str):
         transaction_method = TransactionMethodEnum(transaction_method)
 
-        account = self.repository.get(aggregate_id=account_id)
-        account: BankAccount
-        account_admin = self.repository.get(aggregate_id=account.admin_id)
-        account_admin: AdultAggregate
+        account: BankAccount = self.repository.get(aggregate_id=account_id)
+        account_admin: AdultAggregate = self.repository.get(aggregate_id=account.admin_id)
 
-        #
-        role_aggreates = [self.repository.get(_id) for _id in account_admin.roles]
-        #
-        # if not AccountOverdraftCheckPolicy(
-        #         bank_accout=account,
-        #         new_amount=val,
-        #         roles=role_aggreates,
-        #         expected_permissions=[PermissionsEnum.ADMIN, PermissionsEnum.AccountChangeBalance],
-        #         method=transaction_method
-        # ).evaluate():
         account.change_balance(method=transaction_method, value=val)
-        self.save_aggregate_to_query_table(account)
+        self.save_aggregate_to_query_table(account, table_id='account_table')
         self.save(account)
+        return account.id
 
     def change_account_status(self, account_id: UUID, status: int) -> UUID:
         status = AccountStatusEnum(status)

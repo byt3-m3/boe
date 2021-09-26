@@ -6,7 +6,7 @@ from bson import decode
 from src.enums import GenderEnum, PermissionsEnum
 from src.models.read_models.user_models import (
     ChildReadModel,
-UserAccountReadModel,
+    UserAccountReadModel,
     RoleReadModel
 )
 from src.utils.pymongo_utils import get_client, get_database, get_collection, add_item, query_items, update_item
@@ -24,8 +24,10 @@ def map_child_read_model(item: dict) -> ChildReadModel:
 def map_role_read_model(item: dict) -> RoleReadModel:
     return RoleReadModel.encode(item)
 
+
 def map_user_account_read_model(item: dict) -> UserAccountReadModel:
     return UserAccountReadModel.encode(item)
+
 
 conversion_map = {
     "gender": {
@@ -102,18 +104,24 @@ class QueryTableDAO:
             for item in items
         ]
 
-    def add_aggregate(self, _id, **kwargs):
+    def add_aggregate(self, _id, collection=None, **kwargs):
         if "_id" not in kwargs.keys():
             kwargs["_id"] = _id
 
-        # decode_items(items=[kwargs])
+        _collection = self.collection
+        if collection:
+            _collection = get_collection(self.db, collection=collection)
 
-        return add_item(collection=self.collection, item=kwargs)
+        return add_item(collection=_collection, item=kwargs)
 
-    def update_aggregate(self, _id, **kwargs):
+    def update_aggregate(self, _id, collection=None, **kwargs):
+
+        _collection = self.collection
+        if collection:
+            _collection = get_collection(self.db, collection=collection)
 
         return update_item(
-            collection=self.collection,
+            collection=_collection,
             item_key="_id",
             item_id=_id,
             new_values=kwargs

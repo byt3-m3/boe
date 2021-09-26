@@ -75,7 +75,7 @@ class UserAccountAggregate(CoreAggregate):
     last_name: str
     email: str
     roles: List[UUID]
-    account_id: UUID
+    related_account_id: UUID
 
     def serialize(self) -> dict:
         return {
@@ -83,7 +83,7 @@ class UserAccountAggregate(CoreAggregate):
             "last_name": self.last_name,
             "email": self.email,
             "roles": self.roles,
-            "account_id": self.account_id,
+            "related_account_id": self.related_account_id,
         }
 
     @classmethod
@@ -99,13 +99,13 @@ class UserAccountAggregate(CoreAggregate):
             last_name=last_name,
             email=email,
             roles=roles,
-            account_id=None
+            related_account_id=None
 
         )
 
-    @event("SetAccountID")
-    def set_account_id(self, account_id: UUID):
-        self.account_id = account_id
+    @event
+    def set_related_account_id(self, account_id: UUID):
+        self.related_account_id = account_id
 
     @event("AddRoleEvent")
     def add_role(self, role_id: UUID):
@@ -121,6 +121,7 @@ class ChildAggregate(UserAccountAggregate):
     gender: GenderEnum
     age: int
     grade: int
+    task_id_list: List[UUID]
 
     def serialize(self) -> dict:
         return {
@@ -128,10 +129,11 @@ class ChildAggregate(UserAccountAggregate):
             "last_name": self.last_name,
             "email": self.email,
             "roles": self.roles,
-            "account_id": self.account_id,
+            "related_account_id": self.related_account_id,
             "gender": self.gender.value,
             "age": self.age,
-            "grade": self.grade
+            "grade": self.grade,
+            "task_list": [str(_id) for _id in self.task_id_list]
         }
 
     @classmethod
@@ -141,16 +143,17 @@ class ChildAggregate(UserAccountAggregate):
             key=f"{email}"
         )
         return cls._create(
-            account_id=None,
             event_class=cls.Created,
             id=_id,
             first_name=first_name,
             last_name=last_name,
             email=email,
             gender=gender,
+            task_id_list=[],
             age=age,
             grade=grade,
-            roles=[]
+            roles=[],
+            related_account_id=None,
         )
 
     @event("UpdateGrade")
@@ -159,6 +162,22 @@ class ChildAggregate(UserAccountAggregate):
             raise ValueError("Invalid Value Provided, value must be < 12")
 
         self.age = value
+
+    @event
+    def add_task_id(self, task_id: UUID):
+        if isinstance(task_id, UUID):
+            if task_id not in self.task_id_list:
+                self.task_id_list.append(task_id)
+            else:
+                raise ValueError(f"Value: {task_id} Already Present in List.")
+
+        else:
+            raise TypeError(f"Invalid Type, Expected {UUID}")
+
+    @event
+    def remove_task_id(self, task_id: UUID):
+        if task_id in self.task_id_list:
+            self.task_id_list.remove(task_id)
 
 
 @dataclass

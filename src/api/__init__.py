@@ -5,6 +5,7 @@ from uuid import UUID
 from eventsourcing.persistence import IntegrityError
 from flask import Flask, Response, request
 from src.applications.boe_app import BOEApplication, GenderEnum
+from src.enums import TransactionMethodEnum
 from src.utils.core_utils import make_id
 
 app = Flask(__name__)
@@ -20,6 +21,7 @@ os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 boe_app = BOEApplication()
+
 
 @app.route("/api/v1/account", methods=["POST"])
 def create_account():
@@ -40,6 +42,28 @@ def create_account():
     except IntegrityError:
         return Response(status=417, response=json.dumps(
             {"msg": f"Account Already Present with ID: "}))
+
+
+@app.route("/api/v1/account/balance", methods=["PUT"])
+def change_account_balance():
+    data = request.json
+
+    account_id = UUID(data.get("account_id"))
+    val = data.get("val")
+    method = TransactionMethodEnum(data.get("method"))
+
+    try:
+        account_id = boe_app.change_account_balance(
+            account_id=account_id,
+            val=val,
+            transaction_method=method
+        )
+        account = boe_app.get_account(account_id=account_id)
+        return Response(response=json.dumps({"new_balance": account.balance}), headers=headers)
+    except IntegrityError:
+        return Response(status=417, response=json.dumps(
+            {"msg": f"Account Already Present with ID: "}))
+
 
 @app.route("/api/v1/account/<account_id>", methods=["GET"])
 def get_account(account_id):
@@ -69,8 +93,15 @@ def create_child():
         return Response(status=200, response=json.dumps({"id": str(child_id)}), headers=headers)
 
     except IntegrityError:
-        return Response(status=417, response=json.dumps(
-            {"msg": f"Account Already Present with ID: {make_id(domain='users', key=request_boy.get('email'))}"}))
+        return Response(
+            status=417,
+            response=json.dumps(
+                {
+                    "msg": f"Account Already Present with ID: {make_id(domain='users', key=request_boy.get('email'))}",
+                    "id": f"{make_id(domain='users', key=request_boy.get('email'))}"
+                }
+            )
+        )
 
 
 @app.route("/api/v1/users/adult", methods=["POST"])
@@ -85,8 +116,16 @@ def create_adult():
         return Response(status=200, response=json.dumps({"id": str(parent_id)}), headers=headers)
 
     except IntegrityError:
-        return Response(status=417, response=json.dumps(
-            {"msg": f"Account Already Present with ID: {make_id(domain='users', key=request_body.get('email'))}"}))
+        return Response(
+            status=417,
+            response=json.dumps(
+                {
+                    "msg": f"Account Already Present with ID: {make_id(domain='users', key=request_boy.get('email'))}",
+                    "id": f"{make_id(domain='users', key=request_boy.get('email'))}"
+                }
+            )
+        )
+
 
 @app.route("/api/v1/users/child/<child_id>", methods=["GET"])
 def get_child(child_id):
@@ -102,6 +141,31 @@ def get_child(child_id):
             }
         )
     )
+
+
+@app.route("/api/v1/task", methods=['POST'])
+def create_task():
+    request_body = request.json
+    try:
+        task_id = boe_app.create_and_assign_task(
+            name=request_body.get("name"),
+            description=request_body.get("description"),
+            due_date=request_body.get("due_date"),
+            value=request_body.get("value"),
+            child_id=UUID(request_body.get("child_id"))
+        )
+        return Response(status=200, response=json.dumps({"id": str(task_id)}), headers=headers)
+
+    except IntegrityError:
+        return Response(
+            status=417,
+            response=json.dumps(
+                {
+                    "msg": f"Account Already Present with ID: {make_id(domain='users', key=request_boy.get('email'))}",
+                    "id": f"{make_id(domain='users', key=request_boy.get('email'))}"
+                }
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -184,9 +184,17 @@ def api_create_task():
     )
     print(response.json())
 
+def api_validate_task():
+    task_id = '55f9e20f-2561-4913-9bde-8532f7058262'
+    response = requests.get(
+        url=f'http://127.0.0.1:5000/api/v1/task/{task_id}/validate'
+    )
+    print(response)
+
 if __name__ == "__main__":
     # child_id = api_create_child()
     # adult_id = api_create_adult()
     # account_id = api_create_account()
-    api_change_account_balace_add()
-    # api_create_task()
+    # api_change_account_balace_add()
+    api_create_task()
+    api_validate_task()

@@ -205,6 +205,6 @@ if __name__ == "__main__":
     # account_id = api_create_account()
     # task_id = api_create_task()
 
-    task_id = '7ba89f01-1359-4dce-84cf-8e0ed62f5339'
+    task_id = '8673ca16-bb41-4c73-8a9c-3ff8644c382a'
     api_validate_task(task_id=task_id)
     api_complete_task(task_id=task_id)

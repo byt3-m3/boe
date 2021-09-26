@@ -6,7 +6,7 @@ MONGO_PORT = os.getenv("MONGO_PORT", 27017)
 
 STAGE = os.getenv("STAGE", "dev").lower()
 
-CHILD_QUERY_TABLE = f'{STAGE}_{os.get("CHILD_QUERY_TABLE", "child_table")}'
-ADULT_QUERY_TABLE = f'{STAGE}_{os.get("ADULT_QUERY_TABLE", "adult_table")}'
-ACCOUNT_QUERY_TABLE = f'{STAGE}_{os.get("ACCOUNT_QUERY_TABLE", "account_table")}'
-TASK_QUERY_TABLE = f'{STAGE}_{os.get("TASK_QUERY_TABLE", "task_table")}'
+CHILD_QUERY_TABLE = f'{STAGE}_{os.getenv("CHILD_QUERY_TABLE", "child_table")}'
+ADULT_QUERY_TABLE = f'{STAGE}_{os.getenv("ADULT_QUERY_TABLE", "adult_table")}'
+ACCOUNT_QUERY_TABLE = f'{STAGE}_{os.getenv("ACCOUNT_QUERY_TABLE", "account_table")}'
+TASK_QUERY_TABLE = f'{STAGE}_{os.getenv("TASK_QUERY_TABLE", "task_table")}'

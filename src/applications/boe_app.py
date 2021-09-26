@@ -172,7 +172,16 @@ class BOEApplication(Application):
         self.save(adult_account)
         return adult_account.id
 
-    def create_child(self, first_name: str, last_name: str, email: str, gender: GenderEnum, age: int, grade: int):
+    def create_child(
+            self,
+            first_name: str,
+            last_name: str,
+            email: str,
+            gender:
+            GenderEnum,
+            age: int,
+            grade: int
+    ) -> UUID:
         child = ChildAggregate.create(
             first_name=first_name,
             last_name=last_name,

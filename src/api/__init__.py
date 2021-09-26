@@ -176,8 +176,12 @@ def validate_task(task_id):
 
 @app.route("/api/v1/task/<task_id>/done")
 def complete_task(task_id):
-    boe_app.mark_task_complete(task_id=UUID(task_id))
-    return Response(status=200, headers=headers, response={})
+    try:
+        boe_app.mark_task_complete(task_id=UUID(task_id))
+        return Response(status=200, headers=headers, response={})
+    except AssertionError as err:
+        return Response(status=417, response={"msg": str(err)}, headers=headers)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -216,10 +216,14 @@ class BOEApplication(Application):
         task: TaskAggregate = self.repository.get(task_id)
         task_assignee: ChildAggregate = self.repository.get(task.assignee)
         account: BankAccount = self.repository.get(task_assignee.related_account_id)
+        if task.is_complete:
+            raise AssertionError("Task already complete!")
 
         task.set_complete()
         if task.is_validated:
             account.change_balance(method=TransactionMethodEnum.ADD, value=task.value)
+        else:
+            raise AssertionError("Task Has not been validate")
 
         self.save_aggregate_to_query_table(task, table_id='task_table')
         self.save_aggregate_to_query_table(account, table_id='account_table')

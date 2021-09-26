@@ -26,6 +26,7 @@ class TaskAggregate(Aggregate):
     attachments: List[bytes] = field(default_factory=list)
     items: List[UUID] = field(default=list)
     is_complete: bool = field(default=False)
+    is_validated: bool = field(default=False)
     assignee: UUID = field(default=None)
 
     def serialize(self):
@@ -56,8 +57,9 @@ class TaskAggregate(Aggregate):
 
     @event
     def set_complete(self):
-        if not self.is_complete:
-            self.is_complete = True
+        if self.is_validated:
+            if not self.is_complete:
+                self.is_complete = True
 
     @event
     def update_assign_date(self):

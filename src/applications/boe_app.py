@@ -189,8 +189,7 @@ class BOEApplication(Application):
         return child.id
 
     def get_children():
-
-        query_table_dao.scan_child_aggregates()
+        return query_table_dao.scan_child_aggregates()
 
     def create_task(self, name, description, due_date, value, assignee) -> UUID:
         task = TaskAggregate(

@@ -1,10 +1,17 @@
 import json
 import os
+from http import HTTPStatus
+from typing import Any
 from uuid import UUID
 
 from eventsourcing.persistence import IntegrityError
 from flask import Flask, Response, request
+from src.api.responses import (
+    custom_response,
+    expectation_failed_response
+)
 from src.applications.boe_app import BOEApplication, GenderEnum
+from src.domains.bank_domain import BankAccountQueryModel
 from src.enums import TransactionMethodEnum
 from src.utils.core_utils import make_id
 
@@ -23,6 +30,12 @@ os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 boe_app = BOEApplication()
 
 
+class CustomDecoder(json.JSONEncoder):
+    def default(self, o: Any) -> Any:
+        if isinstance(o, UUID):
+            return str(o)
+
+
 @app.route("/api/v1/account", methods=["POST"])
 def create_account():
     data = request.json
@@ -37,11 +50,10 @@ def create_account():
             adimin_id=UUID(admin_id),
             overdraft_protection=overdraft_protection
         )
+        return custom_response(status=HTTPStatus.OK, payload={"id": str(account_id)})
 
-        return Response(response=json.dumps({"id": str(account_id)}))
     except IntegrityError:
-        return Response(status=417, response=json.dumps(
-            {"msg": f"Account Already Present with ID: "}))
+        return expectation_failed_response(msg=f"Account Already Present with ID: {str(account_id)}")
 
 
 @app.route("/api/v1/account/balance", methods=["PUT"])
@@ -76,6 +88,14 @@ def get_account(account_id):
 
     boe_app.create_account()
     return Response
+
+
+@app.route("/api/v1/accounts")
+def get_accounts():
+    query_model = BankAccountQueryModel()
+    data = query_model.get_accounts()
+    print(data)
+    return Response(status=200, headers=headers, response=json.dumps(data, cls=CustomDecoder))
 
 
 @app.route("/api/v1/users/child", methods=["POST"])
@@ -120,8 +140,8 @@ def create_adult():
             status=417,
             response=json.dumps(
                 {
-                    "msg": f"Account Already Present with ID: {make_id(domain='users', key=request_boy.get('email'))}",
-                    "id": f"{make_id(domain='users', key=request_boy.get('email'))}"
+                    "msg": f"Account Already Present with ID: {make_id(domain='users', key=request_body.get('email'))}",
+                    "id": f"{make_id(domain='users', key=request_body.get('email'))}"
                 }
             )
         )
@@ -170,17 +190,34 @@ def create_task():
 
 @app.route("/api/v1/task/<task_id>/validate")
 def validate_task(task_id):
-    boe_app.validate_task(task_id=UUID(task_id))
-    return Response(status=200, headers=headers, response={})
+    try:
+        boe_app.validate_task(task_id=UUID(task_id))
+        return Response(status=200, headers=headers, response=json.dumps({}))
+    except Exception as err:
+        return Response(status=417, headers=headers, response=json.dumps({"msg": str(err)}))
 
 
 @app.route("/api/v1/task/<task_id>/done")
 def complete_task(task_id):
     try:
         boe_app.mark_task_complete(task_id=UUID(task_id))
-        return Response(status=200, headers=headers, response={})
+        return Response(status=200, headers=headers, response=json.dumps({}))
     except AssertionError as err:
-        return Response(status=417, response={"msg": str(err)}, headers=headers)
+        return Response(status=417, response=json.dumps({"msg": str(err)}), headers=headers)
+
+
+@app.route("/api/v1/task/<task_id>/incomplete")
+def inccomplete_task(task_id):
+    try:
+        boe_app.mark_task_incomplete(task_id=UUID(task_id))
+        return Response(status=200, headers=headers, response=json.dumps({}))
+    except AssertionError as err:
+        return Response(status=417, response=json.dumps({"msg": str(err)}), headers=headers)
+
+
+@app.route("/api/v1/events")
+def handle_events():
+    pass
 
 
 if __name__ == "__main__":

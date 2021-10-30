@@ -41,7 +41,7 @@ def get_database(client: MongoClient, db_name: str) -> Database:
 
 
 def get_collection(database: Database, collection: str) -> Collection:
-    return database.get_collection(name=collection, codec_options=codec_options)
+    return database.get_collection(name=collection)
 
 
 def query_items(collection: Collection, query: dict) -> Cursor:

@@ -3,13 +3,20 @@ from typing import List
 from uuid import UUID
 
 from bson import decode
+from cbaxter1988_utils.src.pymongo_utils import (
+    get_client,
+    get_database,
+    get_collection,
+    add_item,
+    query_items,
+    update_item
+)
 from src.enums import GenderEnum, PermissionsEnum
 from src.models.read_models.user_models import (
     ChildReadModel,
     UserAccountReadModel,
     RoleReadModel
 )
-from src.utils.pymongo_utils import get_client, get_database, get_collection, add_item, query_items, update_item
 
 
 @dataclass
@@ -147,9 +154,9 @@ class QueryTableDAO:
         )
         return (list(map(map_role_read_model, data)))
 
-    def query(self, query: dict):
+    def query(self, query: dict, collection: str):
         items = query_items(
-            collection=self.collection,
+            collection=get_collection(database=self.db, collection=collection),
             query=query
 
         )

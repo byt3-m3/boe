@@ -1,0 +1,24 @@
+@startuml
+state ENABLED
+state ASSIGNED
+state WORK_COMPLETED
+state PENDING_VALIDATION
+state AWARDED
+state OVER_DUE
+state DISABLED
+
+[*] -> ENABLED: New Task
+ENABLED -> ASSIGNED: Assigned child
+ENABLED ---> DISABLED: Task disabled
+DISABLED ---> ENABLED: Task renabled
+ASSIGNED ----> WORK_COMPLETED: Task completed
+ASSIGNED --> ENABLED: Unassigned Child
+WORK_COMPLETED -> ASSIGNED: Task marked not complete
+ASSIGNED -> OVER_DUE: Task due date exceeded
+OVER_DUE --> WORK_COMPLETED: Task value deducted by 20%
+OVER_DUE -> ASSIGNED: Due date updated
+WORK_COMPLETED --> PENDING_VALIDATION: Task pending validation by parent
+PENDING_VALIDATION -> ASSIGNED
+PENDING_VALIDATION -> AWARDED
+AWARDED  -> [*]
+@enduml

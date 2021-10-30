@@ -25,7 +25,21 @@ class AccountStatusEnum(Enum):
     INACTIVE = 2
     OVER_DRAFTED = 3
 
+class BankAccountStateEnum(Enum):
+    OPEN = 1
+    OVER_DRAFTED = 2
+    CLOSED = 99
 
 class TransactionMethodEnum(Enum):
     ADD = 1
     SUBTRACT = 2
+
+
+class TaskState(Enum):
+    ENABLED = 1
+    ASSIGNED = 2
+    OVER_DUE = 3
+    WORK_COMPLETED = 4
+    PENDING_VALIDATION = 5
+    AWARDED = 7
+    DISABLED = 99

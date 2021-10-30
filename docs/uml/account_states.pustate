@@ -1,0 +1,12 @@
+@startuml
+state OPEN
+state OVER_DRAFTED
+state CLOSED
+
+[*] -> OPEN: Account Created
+OPEN -> OVER_DRAFTED: Transaction exceeded account balance
+OPEN -> CLOSED: account closed
+OVER_DRAFTED -> OPEN: Negative balance cleared
+CLOSED --> OPEN: account reopened
+CLOSED  -> [*]
+@enduml

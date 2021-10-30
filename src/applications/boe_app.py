@@ -60,33 +60,56 @@ class BOEApplication(Application):
     @staticmethod
     def save_aggregate_to_query_table(aggregate, table_id=None, **kwargs) -> bool:
         if is_dataclass(aggregate):
-
+            _table_map = [
+                {
+                    "type": TaskAggregate,
+                    "table_id": TASK_QUERY_TABLE
+                },
+                {
+                    "type": BankAccount,
+                    "table_id": ACCOUNT_QUERY_TABLE
+                },
+                {
+                    "type": AdultAggregate,
+                    "table_id": ADULT_QUERY_TABLE
+                },
+                {
+                    "type": ChildAggregate,
+                    "table_id": CHILD_QUERY_TABLE
+                }
+            ]
             try:
-                insert_result = query_table_dao.add_aggregate(
-                    _type=extract_type(aggregate),
-                    _version=aggregate.version,
-                    _id=aggregate.id,
-                    collection=table_id,
-                    **aggregate.serialize()
-                )
-                if insert_result.acknowledged:
-                    return True
+                for item in _table_map:
 
-                else:
-                    return False
+                    if isinstance(aggregate, item['type']):
+                        insert_result = query_table_dao.add_aggregate(
+                            _type=extract_type(aggregate),
+                            _version=aggregate.version,
+                            _id=aggregate.id,
+                            collection=item['table_id'],
+                            **aggregate.serialize()
+                        )
+                        if insert_result.acknowledged:
+                            return True
 
+                        else:
+                            return False
+
+                raise Exception("Register Aggreate to _TableMap")
             except pymongo.errors.DuplicateKeyError:
-                update_result = query_table_dao.update_aggregate(
-                    _type=extract_type(aggregate),
-                    _version=aggregate.version,
-                    _id=aggregate.id,
-                    collection=table_id,
-                    **aggregate.serialize()
-                )
-                if update_result.modified_count >= 1:
-                    return True
-                else:
-                    return False
+                for item in _table_map:
+                    if isinstance(aggregate, item['type']):
+                        update_result = query_table_dao.update_aggregate(
+                            _type=extract_type(aggregate),
+                            _version=aggregate.version,
+                            _id=aggregate.id,
+                            collection=item['table_id'],
+                            **aggregate.serialize()
+                        )
+                        if update_result.modified_count >= 1:
+                            return True
+                        else:
+                            return False
 
     def construct_factory(self) -> InfrastructureFactory:
         if IN_PRODUCTION:
@@ -228,6 +251,9 @@ class BOEApplication(Application):
 
     def validate_task(self, task_id: UUID) -> TaskAggregate:
         task: TaskAggregate = self.repository.get(task_id)
+        if task.is_validated:
+            raise Exception("Task Already Validated")
+
         task.set_validated()
         self.save_aggregate_to_query_table(task)
         self.save(task)
@@ -250,6 +276,23 @@ class BOEApplication(Application):
         self.save_aggregate_to_query_table(account)
         self.save(account, task)
         return task
+
+    def mark_task_incomplete(self, task_id: UUID) -> TaskAggregate:
+        task: TaskAggregate = self.repository.get(task_id)
+        task_assignee: ChildAggregate = self.repository.get(task.assignee)
+        account: BankAccount = self.repository.get(task_assignee.related_account_id)
+
+        if task.is_complete and task.is_validated:
+            task.set_not_complete()
+            task.invalidate()
+            account.change_balance(method=TransactionMethodEnum.SUBTRACT, value=task.value)
+
+            self.save_aggregate_to_query_table(task)
+            self.save_aggregate_to_query_table(account)
+            self.save(account, task)
+            return task
+        else:
+            raise Exception("Unable to Mark Task InComplete")
 
     def create_and_assign_task(self, child_id: UUID, name, description, due_date, value) -> UUID:
         child_aggregate: ChildAggregate = self.repository.get(child_id)

@@ -185,19 +185,31 @@ def api_create_task():
     print(response.json())
     return response.json()['id']
 
-def api_validate_task(task_id):
 
+def api_validate_task(task_id):
     response = requests.get(
         url=f'http://127.0.0.1:5000/api/v1/task/{task_id}/validate'
     )
-    print(response)
+    print(response.json())
+
 
 def api_complete_task(task_id):
-
     response = requests.get(
         url=f'http://127.0.0.1:5000/api/v1/task/{task_id}/done'
     )
-    print(response)
+    print(response.json())
+
+
+def api_incomplete_task(task_id):
+    response = requests.get(
+        url=f'http://127.0.0.1:5000/api/v1/task/{task_id}/incomplete'
+    )
+    print(response.json())
+
+
+def api_get_accounts():
+    response = requests.get("http://127.0.0.1:5000/api/v1/accounts")
+    print(response.json())
 
 if __name__ == "__main__":
     # child_id = api_create_child()
@@ -205,6 +217,7 @@ if __name__ == "__main__":
     # account_id = api_create_account()
     # task_id = api_create_task()
 
-    task_id = '8673ca16-bb41-4c73-8a9c-3ff8644c382a'
-    api_validate_task(task_id=task_id)
-    api_complete_task(task_id=task_id)
+    task_id = '9caae58f-d2ae-4562-a7b1-63c557e72401'
+    # api_validate_task(task_id=task_id)
+    # api_incomplete_task(task_id=task_id)
+    api_get_accounts()

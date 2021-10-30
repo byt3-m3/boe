@@ -1,20 +1,35 @@
-from dataclasses import asdict
-
-from eventsourcing.persistence import Transcoding
-from src.domains.user_domain import RoleAggregate
-from src.enums import GenderEnum, AccountStatusEnum, PermissionsEnum, TransactionMethodEnum
 import json
 
+from eventsourcing.persistence import Transcoding
+from src.enums import (
+    GenderEnum,
+    AccountStatusEnum,
+    PermissionsEnum,
+    TransactionMethodEnum,
+    TaskState, BankAccountStateEnum
+)
 
-class RoleAggregateTranscoding(Transcoding):
-    type = RoleAggregate
-    name = "role"
 
-    def encode(self, o: RoleAggregate) -> str:
-        return asdict(o)
+class TaskStateTranscoding(Transcoding):
+    type = TaskState
+    name = "TaskState"
 
-    def decode(self, d: dict):
-        return RoleAggregate(**d)
+    def encode(self, o: TaskState) -> int:
+        return o.value
+
+    def decode(self, d: int):
+        return TaskState(d)
+
+
+class BankAccountStateTranscoding(Transcoding):
+    type = BankAccountStateEnum
+    name = "BankAccountStateEnum"
+
+    def encode(self, o: BankAccountStateEnum) -> int:
+        return o.value
+
+    def decode(self, d: int):
+        return BankAccountStateEnum(d)
 
 
 class GenderEnumTranscoding(Transcoding):
@@ -26,6 +41,7 @@ class GenderEnumTranscoding(Transcoding):
 
     def decode(self, d: int):
         return GenderEnum(d)
+
 
 class TransactionMethodEnumTranscoding(Transcoding):
     type = TransactionMethodEnum
